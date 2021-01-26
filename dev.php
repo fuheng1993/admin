@@ -12,7 +12,7 @@ return [
             'reload_async' => true,
             'max_wait_time'=>3,
             'package_max_length' => 104857600000, //文件上传最大限制10M
-            'document_root' => '/www/wwwroot/win.go1s.cn/', // v4.4.0以下版本, 此处必须为绝对路径
+            'document_root' => '/www/wwwroot/win/', // v4.4.0以下版本, 此处必须为绝对路径
             'enable_static_handler' => true,
         ],
         'TASK'=>[
@@ -24,14 +24,14 @@ return [
     'TEMP_DIR' => null,
     'LOG_DIR' => null,
     'PSW_STR'=>'potato', //密码加密字符串
-    'HOST_NAME'=>'http://win.go1s.cn/',
+    'HOST_NAME'=>'http://win/',
     /*################ MYSQL CONFIG ##################*/
     'MYSQL'         => [
         //数据库配置
         'host'                 => '127.0.0.1',//数据库连接ip
-        'user'                 => 'win_go1s_cn',//数据库用户名
-        'password'             => 'LTkc6fytcbWF2pJT',//数据库密码
-        'database'             => 'win_go1s_cn',//数据库
+        'user'                 => 'win',//数据库用户名
+        'password'             => 'win',//数据库密码
+        'database'             => 'win',//数据库
         'port'                 => '3306',//端口
         'timeout'              => '30',//超时时间
         'connect_timeout'      => '10',//连接超时时间

@@ -11,7 +11,6 @@ use App\Model\SystemModel;
 use App\Model\UserModel;
 use App\Model\WechatModel;
 use App\Model\WeixinModel;
-use App\Task\MessageTask;
 use App\Task\PayTask;
 use EasySwoole\EasySwoole\Config;
 use EasySwoole\EasySwoole\Task\TaskManager;
@@ -30,58 +29,193 @@ use http\Client;
  */
 class Pay extends \App\HttpController\Index\Base
 {
+
+
     /**
-     * 新版支付 整合支付
+     * 微信扫码支付
      */
-    public function pay(){
+    public function pay()
+    {
         try{
             if(empty($this->param['order_id'])){
-                $this->error('订单不存在','/index'); return false;
+                $this->AjaxJson(0,[],'订单ID必须');return false;
             }
-            $order = OrderModel::create()->where('id',$this->param['order_id'])->find();
-            if($order['is_pay']==1){$this->error('订单已支付，请勿重复支付','/index');return false;}
-            if(!$order){$this->error('订单不存在','/index');return false;}
-            $order_id = $order['id'];
-            $return_url = $this->host."/returnUrl?order_id={$order_id}&is_pay=1";
-            $notify_url = $this->host."/notifyUrl";
-            $error_url = $this->host."/errorUrl?order_id={$order_id}";
-            $result = $this->requestCreateOrder($order['user_order_no'],$order['price'],$order['remark'],$return_url,$notify_url,$error_url);
-            $res = json_decode($result,true);
-            if($res['code']==200&&$res['status']==1){
-                OrderModel::create()->where('id',$order_id)->update(['order_id'=>$res['result']['order_id']]);
-                if($this->isWeixin()){
-                    $url = 'http://33.rmrf.top/api/payunk/payUnkJsApi?order_id='.$res['result']['order_id'];
-                }else{
-                    $url = "http://33.rmrf.top/api/pay/getPayType?appid={$this->system['pay_id']}&token={$this->system['pay_token']}";
-                    $client = new \EasySwoole\HttpClient\HttpClient($url);
-                    $response = $client->get();
-                    $data = json_decode($response->getBody(),true);
-                    $pay_type = $data['result']['pay_type']??2;
-                    if(($pay_type==0||$pay_type==2)&&!empty($this->param['pay_type'])&&$this->param['pay_type']==1){
-                        if($this->is_mobile()){
-                            if($this->isWeixin()){
-                                $url = 'http://33.rmrf.top/api/payunk/payUnkJsApi?order_id='.$res['result']['order_id'];
-                            }else{
-                                $url = 'http://33.rmrf.top/api/payunk/payUnkH5?order_id='.$res['result']['order_id'];
-                            }
-
-                        }else{
-                            $url = 'http://33.rmrf.top/api/payunk/payUnkNative?order_id='.$res['result']['order_id'];
-                        }
-
-                    }else{
-                        $url = 'http://33.rmrf.top/api/pay/pay?order_id='.$res['result']['order_id'].'&pay_type=2';
-                    }
-
-                }
-
-                $this->response()->redirect($url);return true;
-            }else{
-                $this->error('支付环境异常！','/index');return false;
+            $order = OrderModel::create()->where('id',$this->param['order_id'])->get();
+            $system = $this->system;
+            if (Cache::getInstance()->get('pay_qr_code' . $order['id'])) {
+                $pay_qr_code = Cache::getInstance()->get('pay_qr_code' . $order['id']);
+            } else {
+                $host_name = $this->request()->getHeaders()['host'][0];
+                $wechatConfig = new \EasySwoole\Pay\WeChat\Config();
+                $wechatConfig->setAppId($system['appid']);      // 公众号APPID
+                $wechatConfig->setMchId($system['mchid']);          //商户号
+                $wechatConfig->setKey($system['key']);//支付key
+                $wechatConfig->setNotifyUrl("{$host_name}/wxNotify"); //支付回调地址
+                $wechatConfig->setApiClientCert(EASYSWOOLE_ROOT . $system['cert_pem']);//客户端证书
+                $wechatConfig->setApiClientKey(EASYSWOOLE_ROOT . $system['key_pem']); //客户端证书秘钥
+                $bean = new \EasySwoole\Pay\WeChat\RequestBean\Scan();
+                $bean->setOutTradeNo($order['order_no']);
+                $bean->setProductId($order['order_no']);
+                $bean->setBody( $order['remark']);
+                $bean->setTotalFee($order['price']*100);
+                $bean->setSpbillCreateIp($this->getRealIp());
+                $pay = new \EasySwoole\Pay\Pay();
+                $data = $pay->weChat($wechatConfig)->scan($bean);
+                $pay_qr_code = $data->getCodeUrl();
             }
-        }catch (\Exception $e){
-            $this->error('支付环境异常！','/index');return false;
+
+            $this->AjaxJson(1,['pay_qr_code'=>$pay_qr_code],'支付生成成功');
+            return false;
+        }catch (\Throwable $e){
+            $this->AjaxJson(0,[],$e->getMessage());
+            return false;
         }
+
+
+    }
+    /**
+     * 微信H5支付
+     */
+    public function wxPayH5()
+    {
+        try{
+            if(empty($this->param['order_id'])){
+                $this->AjaxJson(0,[],'订单ID必须');return false;
+            }
+            $order = OrderModel::create()->where('id',$this->param['order_id'])->get();
+            if(empty($order)){
+                $this->AjaxJson(0,[],'订单不存在');return false;
+            }
+            if($order['is_pay']==1){
+                $this->response()->redirect('/pictures?transaction_id='.$order['transaction_id'].'&order_no='.$order['order_no']);
+                return false;
+            }
+
+
+            $system = $this->system;
+            if (Cache::getInstance()->get('wx_h5_' . $order['id'])) {
+                $url = Cache::getInstance()->get('wx_h5_' . $order['id']);
+            } else {
+                $host_name = $this->request()->getHeaders()['host'][0];
+                $wechatConfig = new \EasySwoole\Pay\WeChat\Config();
+                $wechatConfig->setAppId($system['appid']);      // 公众号APPID
+                $wechatConfig->setMchId($system['mchid']);          //商户号
+                $wechatConfig->setKey($system['key']);//支付key
+                $wechatConfig->setNotifyUrl("{$host_name}/wxNotify"); //支付回调地址
+                $wechatConfig->setApiClientCert(EASYSWOOLE_ROOT . $system['cert_pem']);//客户端证书
+                $wechatConfig->setApiClientKey(EASYSWOOLE_ROOT . $system['key_pem']); //客户端证书秘钥
+
+                $wap = new \EasySwoole\Pay\WeChat\RequestBean\Wap();
+                $wap->setOutTradeNo($order['order_no']);
+                $wap->setBody($order['remark']);
+                $wap->setTotalFee($order['price'] * 100);
+                $wap->setSpbillCreateIp($this->getRealIp());
+                $pay = new \EasySwoole\Pay\Pay();
+                $params = $pay->weChat($wechatConfig)->wap($wap);
+                $jsApiParameters = $params->toArray();
+                $url = $jsApiParameters['mweb_url'] . '&redirect_url=' . urlencode("{$host_name}/wxPayH5?order_id={$order['id']}");
+                Cache::getInstance()->set('wx_h5_' . $order['id'], $url, 300);
+            }
+
+            $data['url'] = $url;
+            $data['order'] = $order;
+            $this->response()->withHeader('Content-type', 'text/html;charset=utf-8');
+            $this->response()->write(Render::getInstance()->render('/index/pay/h5pay', $data));
+            return false;
+        }catch (\Throwable $e){
+            $this->writeJson(200,[$system['mchid'],$system['appid'],$system['key'],$system['secret']],$e->getMessage());
+            return false;
+        }
+
+
+    }
+    public function AliPayScan(){
+        try{
+            $system = $this->system;
+            $aliConfig = new \EasySwoole\Pay\AliPay\Config();
+            $aliConfig->setGateWay(\EasySwoole\Pay\AliPay\GateWay::NORMAL);
+            $aliConfig->setAppId($system['zfb_mchid']);
+            $aliConfig->setPublicKey($system['zfb_public_key']);
+            $aliConfig->setPrivateKey($system['zfb_private_key']);
+            $pay = new \EasySwoole\Pay\Pay();
+            $order = new \EasySwoole\Pay\AliPay\RequestBean\Scan();
+            $order->setSubject('测试');
+            $order->setTotalAmount('0.01');
+            $order->setOutTradeNo(time());
+
+            $aliPay = $pay->aliPay($aliConfig);
+            $data = $aliPay->scan($order)->toArray();
+            $response = $aliPay->preQuest($data);
+            $this->writeJson(200,$response,'ok');return false;
+
+        }catch (\Throwable $e){
+            $this->writeJson(200,[$system['zfb_mchid'],$system['zfb_private_key'],$system['zfb_public_key']],$e->getMessage());
+            return false;
+        }
+
+    }
+    public function AliPayH5(){
+        try{
+            //检测订单
+            $order_no = 'CN' . date('YmdHis') . rand(1000, 9999);
+            $order = [
+                'id'=>'id',
+                'order_no'=>$order_no,
+                'remark'=>'服务费',
+                'amount'=>0.01,
+            ];
+            $system = $this->system;
+            $aliConfig = new \EasySwoole\Pay\AliPay\Config();
+            $aliConfig->setGateWay(\EasySwoole\Pay\AliPay\GateWay::NORMAL);
+            $aliConfig->setAppId($system['zfb_mchid']);
+            $aliConfig->setPublicKey($system['zfb_public_key']);
+            $aliConfig->setPrivateKey($system['zfb_private_key']);
+            $pay = new \EasySwoole\Pay\Pay();
+
+            ## 对象风格
+            $pay_order = new  \EasySwoole\Pay\AliPay\RequestBean\Wap();
+            $pay_order->setSubject($order['remark']);
+            $pay_order->setOutTradeNo($order['order_no']);
+            $pay_order->setTotalAmount($order['amount']);
+            $res = $pay->aliPay($aliConfig)->wap($pay_order);
+            $html = $this->buildPayHtml(\EasySwoole\Pay\AliPay\GateWay::NORMAL, $res->toArray());
+            $this->response()->write($html);
+
+
+        }catch (\Throwable $e){
+            $this->writeJson(200,[$system['zfb_mchid'],$system['zfb_private_key'],$system['zfb_public_key']],$e->getMessage());
+            return false;
+        }
+
+    }
+    /**
+     * 支付宝支付HTML页面
+     */
+    public function buildPayHtml($endpoint, $payload)
+    {
+        $sHtml = "<form id='alipaysubmit' name='alipaysubmit' action='" . $endpoint . "' method='POST'>";
+        foreach ($payload as $key => $val) {
+            $val = str_replace("'", '&apos;', $val);
+            $sHtml .= "<input type='hidden' name='" . $key . "' value='" . $val . "'/>";
+        }
+        $sHtml .= "<input type='submit' value='ok' style='display:none;'></form>";
+        $sHtml .= "<script>document.forms['alipaysubmit'].submit();</script>";
+        return $sHtml;
+    }
+    // 检测订单是否存在且未付款
+    public function checkOrder($order_id = 0)
+    {
+        if (empty($order_id)) {
+            return '订单不存在';
+        }
+        $order = OrderModel::create()->where('id', $this->param['order_id'])->find();
+        if (empty($order)) {
+            return '订单不存在';
+        }
+        if ($order['is_pay']) {
+            return '订单已支付';
+        }
+        return $order;
     }
     /**
      * curl post 请求生成订单接口
@@ -91,14 +225,14 @@ class Pay extends \App\HttpController\Index\Base
         $post_data['token']       = 'b4270ddc175b0a0647900a661e8f8a8b';
         $post_data['user_order_no']       = $order_no;
         $post_data['amount']       = $amount;
-        $post_data['remark']       = '产品支付';$remark;
+        $post_data['remark']       = '数据查询服务费';$remark;
         $post_data['return_url']       = $return_url;
         $post_data['notify_url']       = $notify_url;
         $post_data['error_url']       = $error_url;
         $post_data['cancel_url']       = $error_url;
         $post_data['agent_id']       = $this->user['agent_id']??0;
         $post_data['banner_id']       = $this->user['banner_id']??0;
-        $url = "http://33.rmrf.top/api/pay/createOrder";
+        $url = "http://22.rmrf.top/api/pay/createOrder";
         $client = new \EasySwoole\HttpClient\HttpClient($url);
         $response = $client->post($post_data);
         return $response->getBody();
@@ -121,11 +255,9 @@ class Pay extends \App\HttpController\Index\Base
                     $save['pay_time'] = time();
                     $order['pay_time']= time();
                 }
+
                 $save['is_pay']=1;
                 $model->where('id',$order_id)->update($save);
-                $task = TaskManager::getInstance();
-                $task->async(new MessageTask(['order_id' => $order['id']])); //投递任务
-                $this->response()->redirect("/search?tel={$order['tel']}&order_no={$order['order_no']}");
                 return true;
             }else{
 
@@ -177,505 +309,164 @@ class Pay extends \App\HttpController\Index\Base
         $this->response()->redirect('/returnUrl?order_id='.$this->param['order_id']); return false;
         $this->error('订单未支付或订单已超时！','/scanSuccess?order_id='.$this->param['order_id']);return false;
     }
-    //展示报告
-    public function showReport($order_id){
-        $order = OrderModel::create()->where('id',$order_id)->find();
-        if(empty($order)){
-            $this->error('订单不存在，请联系客服处理！','/index');return false;
-        }
-        switch ($order['category_id']){
-            case 1:
-                $this->getJsz($order);return true;
-                break;
-            case 2:
-                $this->getVin($order);return true;
-                break;
-            case 3:
-                $this->getWz($order);return true;
-                break;
-            case 4:
-                $this->getQx($order);return true;
-                break;
-            case 5:
-                $this->getCx($order);return true;
-                break;
-            case 6:
-                $this->getWB($order);return true;
-                break;
-            case 8:
-                $this->getCp($order);return true;
-                break;
-             case 9:
-                $this->getNj($order);return true;
-                break;
-            case 10:
-                $this->getZb($order);return true;
-                break;
-        }
-    }
-    //驾驶证 查询
-    public function getJsz($order){
-        try{
-            $body =$order['result']?? Cache::getInstance()->get('order_'.$order['id']);
-            if(empty($body)){
-                //诚数
-                $appkey = '4fxQzIELJ0g86NBz';
-                $data['app_key'] = $appkey;
-                $data['file_number'] = $order['file_no'];//档案编号
-                $data['license_number'] =$order['license_no'];//驾驶证
-                $url = 'http://open.gzchengshu.com/api/v2/driver_license/check';
-                $client = new \EasySwoole\HttpClient\HttpClient($url);
-                $token = $this->getCsToken();
-                $client->setHeader('token',$token);
-                $client->setHeader('content-type','application/x-www-form-urlencoded');
-                $response = $client->post($data);
-                 //京东万象
-//                $license_no = $order['license_no'];
-//                $file_no = $order['file_no'];
-//                $key = '076e7a1520b8f602c40c6b11d08d6da1';
-//                $api = "https://way.jd.com/hangzhoushumaikeji/driving_card_score?licenseno={$license_no}&fileno={$file_no}&appkey=".$key;
-//                $client = new \EasySwoole\HttpClient\HttpClient($api);
-//                $response = $client->get();
-                $body = $response->getBody();
-            }
-            $result = json_decode( $body,true);
-            if($result['code']!=0||empty($result['data'])){
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-                $this->error('订单异常请联系客服处理！','index');return false;
-            }else{
-                Cache::getInstance()->set('order_'.$order['id'],$body,7200);
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-            }
-            $this->assign['data'] = $result;
-            $this->assign['category'] = CategoryModel::create()->where('id',$order['category_id'])->find();
-            $this->assign['order'] = $order;
-            OrderModel::create()->where('id',$order['id'])->update(['result'=>json_encode($result,JSON_UNESCAPED_UNICODE)]);
-            //$this->error('订单异常请联系客服处理！','index');return false;
-            $this->response()->write(Render::getInstance()->render($this->pc.'/index/details/jsz', $this->assign));
-            return true;
-        }catch (\Exception $e){
-            $this->saveErrorInfo($order['user_id']??0,$this->path,$e->getMessage());
-            $this->error('订单异常请联系客服处理！','index');return false;
-        }
 
-
-    }
-    //VIN 查询
-    public function getVin($order){
-        try{
-            $body = $order['result']??Cache::getInstance()->get('order_'.$order['id']);
-            if(empty($body)){
-                $appkey = '4fxQzIELJ0g86NBz';
-                $data['app_key'] = $appkey;
-                $data['vin'] = $order['vin'];//时间戳 UTC秒，如：1505444226
-                $url = 'http://open.gzchengshu.com/api/v2/vehicle_vin/check';
-                $client = new \EasySwoole\HttpClient\HttpClient($url);
-                $token = $this->getCsToken();
-                $client->setHeader('token',$token);
-                $client->setHeader('content-type','application/x-www-form-urlencoded');
-                $response = $client->post($data);
-                $body = $response->getBody();
-                $result = json_decode( $body,true);
-                if($result['code']!=0||$result['message']!='成功'||empty($result['data']['detail'])){
-                    $url = 'http://open.gzchengshu.com/api/v3/vehicle_detail/get';
-                    $client = new \EasySwoole\HttpClient\HttpClient($url);
-                    $token = $this->getCsToken();
-                    $client->setHeader('token',$token);
-                    $client->setHeader('content-type','application/x-www-form-urlencoded');
-                    $response = $client->post($data);
-                    $body = $response->getBody();
+    /**
+     * 支付宝异步回调
+     */
+    public function alipayNotify()
+    {
+        try {
+            if (!($this->param['trade_status'] == 'TRADE_FINISHED' || $this->param['trade_status'] == 'TRADE_SUCCESS')) {
+                \EasySwoole\Pay\AliPay\AliPay::fail();
+                return false;
+            }
+            if (isset($this->param['out_trade_no']) && isset($this->param['trade_no'])) {
+                $model = OrderModel::create();
+                $order = $model->where('order_no', $this->param['out_trade_no'])->get();
+                if (empty($order)) {
+                    \EasySwoole\Pay\AliPay\AliPay::fail();
+                    return false;
                 }
 
-            }
-            $result = json_decode( $body,true);
-            if($result['code']!=0||$result['message']!='成功'){
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-                $this->error('订单异常请联系客服处理！'.$body,'index');return false;
-            }else{
-                Cache::getInstance()->set('order_'.$order['id'],$body,7200);
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-            }
-            $this->assign['data'] = $result;
-            $this->assign['category'] = CategoryModel::create()->where('id',$order['category_id'])->find();
-            $this->assign['order'] = $order;
-            OrderModel::create()->where('id',$order['id'])->update(['result'=>json_encode($result,JSON_UNESCAPED_UNICODE)]);
-            //$this->error('订单异常请联系客服处理！','index');return false;
-            $this->response()->write(Render::getInstance()->render($this->pc.'/index/details/vin', $this->assign));
-            return true;
-        }catch (\Exception $e){
-            $this->saveErrorInfo($order['user_id']??0,$this->path,$e->getMessage());
-            $this->error('订单异常请联系客服处理！','index');return false;
-        }
-
-
-    }
-    //违章 查询
-    public function getWz($order){
-        try{
-            $body = $order['result']??Cache::getInstance()->get('order_'.$order['id']);
-            if(empty($body)){
-                $appkey = '4fxQzIELJ0g86NBz';
-                $data['app_key'] = $appkey;
-                $data['plate_number'] =$order['plate_number'];//时间戳 UTC秒，如：1505444226
-                $data['plate_type'] = $order['plate_type'];//时间戳 UTC秒，如：1505444226
-                $data['engine_no'] = $order['engine_number'];//时间戳 UTC秒，如：1505444226
-                $data['vin'] = $order['vin'];//时间戳 UTC秒，如：1505444226
-                $url = 'http://open.gzchengshu.com/api/v3.1/wz_detail/get';//http://open.gzchengshu.com/api/v3/wz_detail/get
-                $client = new \EasySwoole\HttpClient\HttpClient($url);
-                $token = $this->getCsToken();
-                $client->setHeader('token',$token);
-                $client->setHeader('content-type','application/x-www-form-urlencoded');
-                $res = $client->post($data);
-                $body = $res->getBody();
-            }
-            $result = json_decode( $body,true);
-            if($result['code']!=0||empty($result['data'])){
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-                $this->error('该地区不支持查询，请联系客服处理！','index');return false;
-            }else{
-                Cache::getInstance()->set('order_'.$order['id'],$body,7200);
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-            }
-            $this->assign['data'] = $result;
-            $this->assign['category'] = CategoryModel::create()->where('id',$order['category_id'])->find();
-            $this->assign['order'] = $order;
-            OrderModel::create()->where('id',$order['id'])->update(['result'=>json_encode($result,JSON_UNESCAPED_UNICODE)]);
-            //$this->error('订单异常请联系客服处理！','index');return false;
-            $this->response()->write(Render::getInstance()->render($this->pc.'/index/details/wz', $this->assign));
-            return true;
-        }catch (\Exception $e){
-            $this->saveErrorInfo($order['user_id']??0,$this->path,$e->getMessage());
-            $this->error('该地区不支持查询，请联系客服处理！','index');return false;
-        }
-
-
-    }
-    //出险 查询
-    public function getCx($order){
-        try{
-            $body = Cache::getInstance()->get('order_'.$order['id']);
-           // $body = '{"code":"10000","charge":true,"remain":10,"msg":"查询成功,扣费","result":{"code":"0","message":"成功","data":{"result":"1","description":"查询成功","details":{"records":[{"dangerDate":"2015-10","resultInfo":[{"dangerSingleType":"1","dangerSingleName":"底大边（右）","dangerSingleMoney":"179900"},{"dangerSingleType":"2","dangerSingleName":"右前后门附件(拆装)","dangerSingleMoney":"10000"},{"dangerSingleType":"2","dangerSingleName":"右前后门右后叶(钣金)","dangerSingleMoney":"60000"},{"dangerSingleType":"2","dangerSingleName":"右前后门右后叶右下裙(喷漆)","dangerSingleMoney":"203000"}],"vin":"LFV3B21K6B3297238","vehicleType":"2010 高尔夫 两厢2.0T 自动档 (FV7204TATG)","serviceMoney":"452900"}],"serviceSumCount":"1","serviceSumMoney":"452900"}}}}';
-            $body = $body??$order['result'];
-            if(empty($body)){
-                $appkey = '4fxQzIELJ0g86NBz';
-                $data['app_key'] = $appkey;
-                $data['vin'] = $order['vin'];//
-                $url = 'http://open.gzchengshu.com/api/v2/vehicle/insurance_info/get';
-                $client = new \EasySwoole\HttpClient\HttpClient($url);
-                $token = $this->getCsToken();
-                $client->setHeader('token',$token);
-                $client->setHeader('content-type','application/x-www-form-urlencoded');
-                $res = $client->post($data);
-                $body = $res->getBody();
-            }
-            $result = json_decode( $body,true);
-            if(empty($result)||$result['code']!=0||(!empty($result['msg'])||$result['msg']!='成功')){
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-                //$this->error('订单异常请联系客服处理！','index');return false;
-            }else{
-                Cache::getInstance()->set('order_'.$order['id'],$body,72000000);
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-            }
-
-            $this->assign['data'] = $result;
-            $this->assign['category'] = CategoryModel::create()->where('id',$order['category_id'])->find();
-            $this->assign['order'] = $order;
-            OrderModel::create()->where('id',$order['id'])->update(['result'=>json_encode($result,JSON_UNESCAPED_UNICODE)]);
-            //$this->error('订单异常请联系客服处理！','index');return false;
-            $this->response()->write(Render::getInstance()->render($this->pc.'/index/details/cx', $this->assign));
-            return true;
-        }catch (\Exception $e){
-            $this->saveErrorInfo($order['user_id']??0,$this->path,$e->getMessage());
-            $this->error('订单异常请联系客服处理！','index');return false;
-        }
-
-
-    }
-    //维保 查询
-    public function getWb($order){
-        try{
-            $body = Cache::getInstance()->get('order_'.$order['id']);
-            $body = $body??$order['result'];
-
-            if((empty($body)||$body=='null')&&$order['is_query']==0){
-
-                if(!empty($order['query_order_no'])){ //如果已经生成报告
-                    $appkey = '4fxQzIELJ0g86NBz';
-                    $post_data['app_key'] = $appkey;
-                    $post_data['vin'] = $order['vin'];//
-                    $post_data['orderId'] = $order['query_order_no'];//
-                    $url = 'http://open.gzchengshu.com/api/v3/order_info/get'; //获取报告
-                    $clt = new \EasySwoole\HttpClient\HttpClient($url);
-                    $token = $this->getCsToken();
-                    $clt->setHeader('token',$token);
-                    $clt->setHeader('content-type','application/x-www-form-urlencoded');
-                    $clt_result = $clt->post($post_data);
-                    $body = $clt_result->getBody();
-                    $result = json_decode($body,true);
-                    $save_order['query_time'] = time();
-                    if(!empty($result)&&$result['code']==0&&$result['data']['result']==2){
-                        $save_order['result'] = json_encode($result,JSON_UNESCAPED_UNICODE);
-                        $save_order['is_query'] = 1; //有报告
-                    }else{
-                        if(!empty($result['data']['result'])&&$result['data']['result']==1){
-                            $save_order['is_query'] = 0; //查询中
-                            $save_order['query_time'] = time();
-                            $save_order['result'] ='';
-                        }else{
-                            $save_order['result'] =$result['data']['result']==5?'查无记录':'无报告';
-                            $save_order['is_query'] = 2; //无报告
-                            $save_order['query_time'] = time();
-                        }
+                $res = $this->alipayQueryOrderFind($order, $order->order_no);
+                if (!empty($res['biz_content'])) {
+                    $res = json_decode($res['biz_content'], true);
+                    if (empty($res['out_trade_no'])) {
+                        \EasySwoole\Pay\AliPay\AliPay::fail();
+                        return false;
                     }
-                    //报告获取中
-                    OrderModel::create()->where('id',$order['id'])->update($save_order);
+                    /**
+                     * 异步处理支付
+                     */
+
+                    $trade_no = $this->param['trade_no'];
+                    $order_id = $order['id'];
+                    //订单更新
+                    $save_order['transaction_id'] = $trade_no;
+                    $save_order['is_pay'] = 1;
+                    if ($order['pay_time'] == 0) {
+                        $save_order['pay_time'] = !empty($this->param['gmt_payment']) ? strtotime($this->param['gmt_payment']) : time();
+                    }
+                    OrderModel::create()->where('id', $order_id)->update($save_order);
+                    \EasySwoole\Pay\AliPay\AliPay::success();//成功响应
+                } else {
+                    \EasySwoole\Pay\AliPay\AliPay::fail();
+                    return false;
+                }
+
+            } else {
+                \EasySwoole\Pay\AliPay\AliPay::fail();
+                return false;
+            }
+        } catch (\Throwable $e) {
+            \EasySwoole\Pay\AliPay\AliPay::fail();
+            return false;
+        }
+    }
+
+    /**
+     * 支付宝成功回调
+     */
+    public function alipayReturn()
+    {
+        try {
+            if (isset($this->param['out_trade_no']) && isset($this->param['trade_no'])) {
+                $model = OrderModel::create();
+                $order = $model->where('order_no', $this->param['out_trade_no'])->get();
+                if (empty($order)) {
+                    $this->error('未查询到订单,请联系客服处理！');
+                    return false;
+                }
+
+                $res = $this->alipayQueryOrderFind($order, $order->order_no);
+                if (!empty($res['biz_content'])) {
+                    $res = json_decode($res['biz_content'], true);
+                    if (empty($res['out_trade_no'])) {
+                        $this->error('订单异常，请联系客服处理！', $order->error_url);
+                        return false;
+                    }
+                    $trade_no = $this->param['trade_no'];
+                    $order_id = $order['id'];
+                    $save_order['transaction_id'] = $trade_no;
+                    $save_order['is_pay'] = 1;
+                    $save_order['pay_time'] = empty($this->param['timestamp']) ? time() : strtotime($this->param['timestamp']);
+                    OrderModel::create()->where('id', $order_id)->update($save_order);
+                    $this->response()->redirect($order->return_url);
+                } else {
+                    $this->error('订单异常，请联系客服处理！', $order->error_url);
+                    return false;
+                    //$this->response()->redirect($order->error_url);
+                }
+
+            } else {
+                $this->error('支付异常');
+                return false;
+            }
+        } catch (\Exception $e) {
+            $this->error($e->getMessage());
+            return false;
+        }
+
+
+    }
+
+    /**
+     * 微信支付异步回调
+     */
+    public function wxNotify()
+    {
+        try {
+            $xml = $this->request()->getBody()->__toString();
+            libxml_disable_entity_loader(true);
+            $content = json_decode(json_encode(simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA)), true);
+            var_dump($content);
+            $order = OrderModel::create()->where('order_no', $content['out_trade_no'])->get();
+            $system = $this->system;
+            $pay = new \EasySwoole\Pay\Pay();
+            $wechatConfig = new \EasySwoole\Pay\WeChat\Config();
+            $wechatConfig->setAppId($system['appid']);      // 公众号APPID
+            $wechatConfig->setMchId($system['mchid']);          //商户号
+            $wechatConfig->setKey($system['key']);//支付key
+            $wechatConfig->setNotifyUrl($this->host.'/wxNotify'); //支付回调地址
+            $wechatConfig->setApiClientCert(EASYSWOOLE_ROOT . $system['cert_pem']);//客户端证书
+            $wechatConfig->setApiClientKey(EASYSWOOLE_ROOT . $system['key_pem']); //客户端证书秘钥
+            $data = $pay->weChat($wechatConfig)->verify($xml);
+
+            $data['pay_time'] = strtotime($data['time_end']);
+            if ($content['return_code'] == 'SUCCESS' && $content['result_code'] == 'SUCCESS') {
+                /**
+                 * 异步处理支付
+                 */
+                $save_order['transaction_id'] = $data['transaction_id'] ;
+                $save_order['pay_time'] = $data['pay_time'] ;
+                $save_order['is_pay'] = 1 ;
+                $model =OrderModel::create();
+                if($model->where('id',$order['id'])->update($save_order)){
+                    var_dump($model->lastQuery()->getLastPrepareQuery());
+                    $this->response()->write(\EasySwoole\Pay\WeChat\WeChat::success());    return false;
                 }else{
-
-                    $appkey = '4fxQzIELJ0g86NBz';
-                    $data['app_key'] = $appkey;
-                    $data['vin'] = $order['vin'];//
-                    $data['asyn_address'] = $this->host.'/wbNotify';//
-                    $url = 'http://open.gzchengshu.com/api/v3/order/create'; //下订单
-                    $client = new \EasySwoole\HttpClient\HttpClient($url);
-                    $token = $this->getCsToken();
-                    $client->setHeader('token',$token);
-                    $client->setHeader('content-type','application/x-www-form-urlencoded');
-                    $response = $client->post($data);
-                    $res = json_decode($response->getBody(),1);
-
-                    if(!empty($res)&&$res['code']==0){
-                        if(!empty($res['data']['orderId'])){
-                            $order['query_order_no'] = $res['data']['orderId']??'';
-                            $post_data['app_key'] = $appkey;
-                            $post_data['vin'] = $order['vin'];//
-                            $post_data['orderId'] = $res['data']['orderId'];//
-                            $url = 'http://open.gzchengshu.com/api/v3/order_info/get'; //获取报告
-                            $clt = new \EasySwoole\HttpClient\HttpClient($url);
-                            $token = $this->getCsToken();
-                            $clt->setHeader('token',$token);
-                            $clt->setHeader('content-type','application/x-www-form-urlencoded');
-                            $clt_result = $clt->post($post_data);
-                            $body = $clt_result->getBody();
-                            $result = json_decode($body,true);
-                            $save_order['query_order_no'] = $order['query_order_no'];
-                            if(!empty($result)&&$result['code']==0&&$result['data']['result']==2){
-                                $save_order['result'] = json_encode($result,JSON_UNESCAPED_UNICODE);
-                                $save_order['query_time'] = time();
-                                $save_order['is_query'] = 1; //有报告
-                            }else{
-                                if(!empty($result['data']['result'])&&$result['data']['result']==1){
-                                    $save_order['result'] ='';
-                                    $save_order['is_query'] = 0; //查询中
-                                    $save_order['query_time'] = time();
-                                }else{
-                                    $save_order['result'] =$result['data']['result']==5?'查无记录':'无报告';
-                                    $save_order['is_query'] = 2; //无报告
-                                    $save_order['query_time'] = time();
-                                }
-                            }
-                            //报告获取中
-                            OrderModel::create()->where('id',$order['id'])->update($save_order);
-                        }else{
-                            //报告获取中
-                            OrderModel::create()->where('id',$order['id'])->update(['result'=>'无报告','is_query'=>2,'query_time'=>time()]);
-                        }
-                    }else{
-
-                        OrderModel::create()->where('id',$order['id'])->update(['result'=>'下单不成功','is_query'=>2,'query_time'=>time()]);
-                    }
+                    var_dump($model->lastQuery()->getLastPrepareQuery());
+                    $this->response()->write(\EasySwoole\Pay\WeChat\WeChat::fail());    return false;
                 }
-
-               }
-
-            $this->assign['data'] = $result??[];
-            $this->assign['category'] = CategoryModel::create()->where('id',$order['category_id'])->find();
-            $this->assign['order'] = OrderModel::create()->where('id',$order['id'])->get();
-            OrderModel::create()->where('id',$order['id'])->update(['result'=>json_encode($result,JSON_UNESCAPED_UNICODE)]);
-            $this->response()->write(Render::getInstance()->render($this->pc.'/index/details/wb', $this->assign));
-            return true;
-        }catch (\Exception $e){
-            $this->saveErrorInfo($order['user_id']??0,$this->path,$e->getMessage());
-            $this->error('订单异常请联系客服处理！','index');return false;
-        }
-
-
-    }
-    //强险 查询
-    public function getQx($order){
-        try{
-            $body = $order['result']??Cache::getInstance()->get('order_'.$order['id']);
-            if(empty($body)){
-                $appkey = '4fxQzIELJ0g86NBz';
-                $data['app_key'] = $appkey;
-                $data['vin'] = $order['vin'];//时间戳 UTC秒，如：1505444226
-                $url = 'http://open.gzchengshu.com/api/v3/insure_date/get';
-                $client = new \EasySwoole\HttpClient\HttpClient($url);
-                $token = $this->getCsToken();
-                $client->setHeader('token',$token);
-                $client->setHeader('content-type','application/x-www-form-urlencoded');
-                $response = $client->post($data);
-                $body = $response->getBody();
-            }
-            $result = json_decode( $body,true);
-            if($result['code']!=0||empty($result['data'])){
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-                //$this->error('订单异常请联系客服处理！'.$body,'index');return false;
             }else{
-                Cache::getInstance()->set('order_'.$order['id'],$body,7200);
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
+                $this->response()->write(\EasySwoole\Pay\WeChat\WeChat::fail());    return false;
             }
-            $this->assign['data'] = $result;
-            $this->assign['category'] = CategoryModel::create()->where('id',$order['category_id'])->find();
-            $this->assign['order'] = $order;
-            OrderModel::create()->where('id',$order['id'])->update(['result'=>json_encode($result,JSON_UNESCAPED_UNICODE)]);
-            //$this->error('订单异常请联系客服处理！','index');return false;
-            $this->response()->write(Render::getInstance()->render($this->pc.'/index/details/qx', $this->assign));
-            return true;
-        }catch (\Exception $e){
-            $this->saveErrorInfo($order['user_id']??0,$this->path,$e->getMessage());
-            $this->error('订单异常请联系客服处理！','index');return false;
-        }
 
-
-    }
-    //车牌 查询车辆信息
-    public function getCp($order){
-        try{
-            $body = $order['result']??Cache::getInstance()->get('order_'.$order['id']);
-            if(empty($body)){
-
-                $appkey = '4fxQzIELJ0g86NBz';
-                $data['app_key'] = $appkey;
-                $data['plate_number'] = $order['plate_number'];//
-                $data['plate_type'] = $order['plate_type'];//
-                $url = 'http://open.gzchengshu.com/api/v3/vehicle_info/query';
-                $client = new \EasySwoole\HttpClient\HttpClient($url);
-                $token = $this->getCsToken();
-                $client->setHeader('token',$token);
-                $client->setHeader('content-type','application/x-www-form-urlencoded');
-                $response = $client->post($data);
-                $body = $response->getBody();
+        } catch (\Exception $e) {
+            //回调异常
+            var_dump('回调异常' . $e->getMessage());
+            if ($content['return_code'] == 'SUCCESS' && $content['result_code'] == 'SUCCESS') {
+                $this->response()->write(\EasySwoole\Pay\WeChat\WeChat::success());
+                return true;
             }
-            $result = json_decode( $body,true);
-            if($result['code']!=0||$result['message']!='成功'){
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-                $this->error('订单异常请联系客服处理！'.$body,'index');return false;
-            }else{
-                Cache::getInstance()->set('order_'.$order['id'],$body,7200);
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-            }
-            $this->assign['data'] = $result;
-            $this->assign['category'] = CategoryModel::create()->where('id',$order['category_id'])->find();
-            $this->assign['order'] = $order;
-            OrderModel::create()->where('id',$order['id'])->update(['result'=>json_encode($result,JSON_UNESCAPED_UNICODE)]);
-            //$this->error('订单异常请联系客服处理！','index');return false;
-            $this->response()->write(Render::getInstance()->render($this->pc.'/index/details/cp', $this->assign));
-            return true;
-        }catch (\Exception $e){
-            $this->saveErrorInfo($order['user_id']??0,$this->path,$e->getMessage());
-            $this->error('订单异常请联系客服处理！','index');return false;
-        }
-
-
-    }
-    //车牌 查询车辆信息
-    public function getNj($order){
-        try{
-            $body =$order['result']??Cache::getInstance()->get('order_'.$order['id']);;
-            //'{"code":"0","message":"成功","data":{"result":"1","description":"查询成功，有数据","detail":{"inspectionDateEnd":"2022-05-31 00:00:00","state":"0","desc":"正常"}}}';
-            if(empty($body)){
-                $appkey = '4fxQzIELJ0g86NBz';
-                $data['app_key'] = $appkey;
-                $data['plate_number'] = $order['plate_number'];//
-                $data['plate_type'] = $order['plate_type'];//
-                $url = 'http://open.gzchengshu.com/api/v3/inspection_state/check';
-                $client = new \EasySwoole\HttpClient\HttpClient($url);
-                $token = $this->getCsToken();
-                $client->setHeader('token',$token);
-                $client->setHeader('content-type','application/x-www-form-urlencoded');
-                $response = $client->post($data);
-                $body = $response->getBody();
-            }
-            $result = json_decode( $body,true);
-            if($result['code']!=0||$result['message']!='成功'){
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-                $this->error('订单异常请联系客服处理！'.$body,'index');return false;
-            }else{
-                Cache::getInstance()->set('order_'.$order['id'],$body,7200);
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-            }
-            $this->assign['data'] = $result;
-            $this->assign['category'] = CategoryModel::create()->where('id',$order['category_id'])->find();
-            $this->assign['order'] = $order;
-            OrderModel::create()->where('id',$order['id'])->update(['result'=>json_encode($result,JSON_UNESCAPED_UNICODE)]);
-            //$this->error('订单异常请联系客服处理！','index');return false;
-            $this->response()->write(Render::getInstance()->render($this->pc.'/index/details/nj', $this->assign));
-            return true;
-        }catch (\Exception $e){
-            $this->saveErrorInfo($order['user_id']??0,$this->path,$e->getMessage());
-            $this->error('订单异常请联系客服处理！','index');return false;
-        }
-
-
-    }
-    //车牌 查询在保记录
-    public function getZb($order){
-        try{
-            $body =$order['result']??Cache::getInstance()->get('order_'.$order['id']);;
-            //'{"code":"0","message":"成功","data":{"result":"1","description":"查询成功，有数据","detail":{"inspectionDateEnd":"2022-05-31 00:00:00","state":"0","desc":"正常"}}}';
-            if(empty($body)){
-                $appkey = '4fxQzIELJ0g86NBz';
-                $data['app_key'] = $appkey;
-                $data['plate_number'] = $order['plate_number'];//
-                $url = 'http://open.gzchengshu.com/api/v3.1/car_insurance/get';
-                $client = new \EasySwoole\HttpClient\HttpClient($url);
-                $token = $this->getCsToken();
-                $client->setHeader('token',$token);
-                $client->setHeader('content-type','application/x-www-form-urlencoded');
-                $response = $client->post($data);
-                $body = $response->getBody();
-            }
-            $result = json_decode( $body,true);
-            if($result['code']!=0||$result['message']!='成功'){
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-                $this->error('订单异常请联系客服处理！'.$body,'index');return false;
-            }else{
-                Cache::getInstance()->set('order_'.$order['id'],$body,7200);
-                $this->saveErrorInfo($order['user_id'],$this->path,$body);
-            }
-            $this->assign['data'] = $result;
-            $this->assign['category'] = CategoryModel::create()->where('id',$order['category_id'])->find();
-            $this->assign['order'] = $order;
-            OrderModel::create()->where('id',$order['id'])->update(['result'=>json_encode($result,JSON_UNESCAPED_UNICODE)]);
-            //$this->error('订单异常请联系客服处理！','index');return false;
-            $this->response()->write(Render::getInstance()->render($this->pc.'/index/details/zb', $this->assign));
-            return true;
-        }catch (\Exception $e){
-            $this->saveErrorInfo($order['user_id']??0,$this->path,$e->getMessage());
-            $this->error('订单异常请联系客服处理！','index');return false;
-        }
-
-
-    }
-    //验证支付订单
-    public function checkOrder($order_id){
-        $param['appid'] = 1;
-        $param['token'] = 'b4270ddc175b0a0647900a661e8f8a8b';
-        $param['order_id'] = $order_id;
-        $url = 'http://33.rmrf.top/api/pay/queryOrder';
-
-        $client = new \EasySwoole\HttpClient\HttpClient($url);
-        $response = $client->post($param);
-        $body =  $response->getBody();
-        $res = json_decode($body, true);
-
-        if ($res['code'] == 200 && $res['status'] == 1 && $res['result']['is_pay'] == 1) {
-            return true;
-        } else {
-            return $body;
+            $this->response()->write(\EasySwoole\Pay\WeChat\WeChat::fail());
+            return false;
         }
 
     }
+
+
+
 
 
 

@@ -72,7 +72,7 @@ class MessageTask implements TaskInterface
         return true;
     }
     public function sendMessage($tel,$message){
-        $url = "https://way.jd.com/chuangxin/dxjk?mobile={$tel}&content={$message}&appkey=076e7a1520b8f602c40c6b11d08d6da1";
+        $url = "https://way.jd.com/chuangxin/dxjk?mobile={$tel}&content={$message}&appkey=秘钥";
         $client = new \EasySwoole\HttpClient\HttpClient($url);
         $client->getClient();
         $res = $client->get();
