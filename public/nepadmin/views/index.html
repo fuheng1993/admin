@@ -1,0 +1,648 @@
+<div class="layui-fluid" id="VIEW-index" lay-title="首页">
+<style>  .layui-table-cell {  padding: 0 5px;  }</style>
+  <div class="layui-row layui-col-space15">
+    <div class="layui-col-lg8">
+      <div class="layui-row layui-col-space15">
+        <div class="layui-col-sm3">
+          <div class="nepadmin-linecard">
+            <p class="nepadmin-linecard-title">今日新增用户</p>
+            <span class="nepadmin-linecard-text" id="user_num">0</span>
+            <span class="nepadmin-ignore">个</span>
+          </div>
+        </div>
+        <div class="layui-col-sm3">
+          <div class="nepadmin-linecard nepadmin-br-red">
+            <p class="nepadmin-linecard-title">
+              今日访问IP数
+              <!--<a href="#" class="nepadmin-c-blue nepadmin-font-12">立即处理</a>-->
+            </p>
+            <span class="nepadmin-linecard-text" id="ip_num">0</span>
+            <span class="nepadmin-ignore">个</span>
+          </div>
+        </div>
+        <div class="layui-col-sm3">
+          <div class="nepadmin-linecard nepadmin-br-green">
+            <p class="nepadmin-linecard-title">今日交易金额</p>
+            <span class="nepadmin-linecard-text" id="amount">￥0</span>
+            <span class="nepadmin-ignore">元</span>
+          </div>
+        </div>
+        <div class="layui-col-sm3">
+          <div class="nepadmin-linecard nepadmin-br-green">
+            <p class="nepadmin-linecard-title">今日退款单数</p>
+            <span class="nepadmin-linecard-text" id="refund_amount">0</span>
+            <span class="nepadmin-ignore">元</span>
+          </div>
+        </div>
+        <div class="layui-col-xs12">
+          <div class="layui-row layui-col-space15">
+            <div class="layui-col-xs12">
+              <div class="layui-card">
+                <div class="layui-tab layui-tab-brief" lay-filter="index-chart">
+                  <ul class="layui-tab-title" >
+                    <li class="layui-this">按日统计</li>
+                    <li>按月统计</li>
+                  </ul>
+                  <ul class="layui-tab-title" id="user_list">
+                    <li lay-id="all" class="layui-this">全部项目</li>
+                  </ul>
+                  <div class="layui-tab-content" style="padding:0;">
+                    <div class="layui-tab-item layui-show">
+                      <div id="index-echartLine" style="width: 100%;height:400px;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="layui-col-xs6">
+              <div class="layui-card">
+                <div class="layui-card-header">项目每月收款统计
+                  <div class="layui-inline" style="float: right">
+                    <div class="layui-input-inline" style="width: 120px">
+                      <input type="text" name="day" id="user_day_date" class="layui-input" placeholder="月份" />
+                    </div>
+
+                  </div>
+                </div>
+                <div class="layui-card-body">
+                  <div id="day-chart-index-echartBie" style="width: 100%;height:300px;"></div>
+                </div>
+              </div>
+
+            </div>
+            <div class="layui-col-xs6">
+
+              <div class="layui-card">
+                <div class="layui-card-header">项目每月收款统计
+                  <div class="layui-inline" style="float: right">
+                    <div class="layui-input-inline" style="width: 120px">
+                      <input type="text" name="day" id="user_month_date" class="layui-input" placeholder="日期" />
+                    </div>
+                  </div>
+                </div>
+                <div class="layui-card-body">
+                  <div id="month-chart-index-echartBie" style="width: 100%;height:300px;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="layui-col-xs12">
+              <div class="layui-card" style="padding: 5px;">
+                <div class="layui-tab layui-tab-brief" lay-filter="index-order">
+                  <div class="layui-inline" style="float: right">
+                    <span>选择时间</span>
+                    <div class="layui-input-inline" style="width: 120px;">
+
+                      <input type="text" name="day_value" id="day_value" class="layui-input" placeholder="选择日期" />
+                      <input type="text" style="display: none" name="month_value" id="month_value" class="layui-input" placeholder="选择月份" />
+                    </div>
+                  </div>
+                  <ul class="layui-tab-title"  style="width: 80%">
+                    <li class="layui-this">按日统计</li>
+                    <li>按月统计</li>
+                  </ul>
+
+                  <div class="layui-tab-content" style="padding:0;">
+                    <div class="layui-tab-item layui-show nepadmin-table-full">
+                      <table id="index-tableOrder" lay-filter="index-tableOrder"></table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="layui-col-lg4">
+      <div class="layui-card">
+        <div class="layui-card-header">用户统计
+          <div class="layui-inline" style="float: right">
+            <span>日期</span>
+            <div class="layui-input-inline" style="width: 100px">
+              <input type="text" name="day" id="day" class="layui-input" placeholder="日期" />
+            </div>
+
+          </div>
+        </div>
+        <div class="layui-card-body" id="userPayChart">
+<!--          <div class="nepadmin-pad-b20">-->
+<!--            <h2 class="nepadmin-pad-b10">￥200000 35%<span class="nepadmin-font-14 nepadmin-c-gray nepadmin-fr">信用</span></h2>-->
+<!--            <div class="layui-progress">-->
+<!--              <div-->
+<!--                      class="layui-progress-bar layui-bg-blue" lay-percent="35%"></div>-->
+<!--            </div>-->
+<!--          </div>-->
+
+        </div>
+      </div>
+      <div class="layui-card">
+        <div class="layui-card-header">版本信息</div>
+        <div class="layui-card-body">
+          <table class="layui-table">
+            <colgroup>
+              <col width="100" />
+              <col />
+            </colgroup>
+            <tbody>
+            <tr>
+              <td>当前版本</td>
+              <td>v1.0.0</td>
+            </tr>
+            <tr>
+              <td>前端框架</td>
+              <td><script type="text/html" template>layui-v{{ layui.v }}</script></td>
+            </tr>
+            <tr>
+              <td>后端框架</td>
+              <td>EasySwoole 3.x</td>
+            </tr>
+            <tr>
+              <td>开发人员</td>
+              <td>Small Potato</td>
+            </tr>
+            <tr>
+              <td>联系方式</td>
+              <td>tel:13662829560 &nbsp;&nbsp;&nbsp;QQ:283366402   </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+
+
+
+    </div>
+  </div>
+  <script type="text/html" id="TPL-index-params">
+    {{# layui.each(d.params,function(i,item){ }}
+    <span class="layui-badge-rim">{{ item.val }}</span>
+    {{# }) }}
+  </script>
+  <script type="text/html" id="TPL-index-status">
+    {{#
+        var status = {
+            WAIT_PAY:{title:'待付款',color:'blue'},
+            WAIT_DELIVER:{title:'待发货',color:'orange'},
+            WAIT_REFUND:{title:'待退款',color:'red'},
+        }[d.status];
+    }}
+    <span class="layui-badge layui-bg-{{status.color}}">{{ status.title }}</span>
+  </script>
+</div>
+
+<script>
+
+
+  layui.use(
+          ['admin', 'echarts', 'element', 'helper', 'table', 'util', 'siam','laydate'],
+          function(admin, echarts, element, helper, table, util) {
+            var $ = layui.jquery
+                    ,laydate=layui.laydate
+            var view = $('#VIEW-chart-index');
+            var siam = layui.siam;
+
+            admin.renderTable({
+              elem: '[lay-filter="index-tableOrder"]',
+              id: 'index-tableOrder',
+              api: 'getTableChart',
+              page: false,
+              totalRow: true,
+              cols: [[
+                {width: 150, title: '查询项目', field: 'name', totalRowText: '合计'},
+                {width: 100, title: '时间', field: 'date'},
+                {title: '总订单数', field: 'num'},
+                {title: '待付比例', field: 'no_pay_r',style:"color: #1E9FFF;"},
+                {title: '待付数', field: 'no_pay_num' ,totalRow: true},
+                {title: '待付金额', field: 'no_pay_money',style:"color: #FF5722;",totalRow: true},
+                {title: '已付比例', field: 'pay_r',style:"color: #1E9FFF;"},
+                {title: '已付数', field: 'pay_num',totalRow: true},
+                {title: '已付金额', field: 'pay_money',style:"color: #FF5722;",totalRow: true},
+                {title: '退款比例', field: 'refund_r',style:"color: #1E9FFF;"},
+                {title: '退款数', field: 'refund_num',totalRow: true},
+                {title: '退款金额', field: 'refund_money',style:"color: #FF5722;",totalRow: true},
+
+              ]]
+            });
+            laydate.render({
+              elem: '#day_value'
+              , type: 'date'
+              , value: new Date()
+              , done: function (value, date, endDate) {
+                table.reload('index-tableOrder', {
+                  where: {type:1,value:value}, page: false
+                });
+              }
+            });
+            laydate.render({
+              elem: '#month_value'
+              , type: 'month'
+              , value: new Date()
+              , done: function (value, date, endDate) {
+                table.reload('index-tableOrder', {
+                  where: {type:2,value:value}, page: false
+                });
+              }
+            });
+            var order_type=1;
+            element.on('tab(index-order)', function (data) {
+              var value = '';
+              order_type =data.index==0?1:2;
+              if (order_type == 1) {
+                $('#day_value').show();
+                $('#month_value').hide();
+                value = $('#day_value').val();
+              }
+              if (order_type == 2) {
+                $('#day_value').hide();
+                $('#month_value').show();
+                value = $('#month_value').val();
+              }
+              table.reload('index-tableOrder', {
+                where: {type:data.index==0?1:2,value:value}, page: false
+              });
+              return false;
+            })
+
+
+
+            var date = new Date();
+            var day = date.getDate();
+
+            //用户收款统计
+            function getPayChart(type,value){
+              admin.post({
+                api: 'getPayChart',
+                data:{type:type,value:value},
+                async: false,
+                success:function (res) {
+                  $('#userPayChart').html('');
+                  var data = res.result;
+
+                  layui.each(data,function (index,item) {
+                    $('#user_list').append('<li lay-id="'+item.id+'">'+item.name+'</li>')
+                    $('#userPayChart').append('   <div class="nepadmin-pad-b20">\n' +
+                            '            <h2 class="nepadmin-pad-b10"><span style="color: red !important;">￥'+item.pay_money+'</span> <span style="color: #5a8bff">'+item.r+'</span><span class="nepadmin-font-14 nepadmin-c-gray nepadmin-fr">'+item.name+'</span></h2>\n' +
+                            '            <div class="layui-progress" lay-filter="progress_'+item.id+'" lay-showPercent="true">\n' +
+                            '              <div\n' +
+                            '                      class="layui-progress-bar layui-bg-blue" lay-percent="'+item.r+'"></div>\n' +
+                            '            </div>\n' +
+                            '          </div>')
+                    element.progress('progress_'+item.id, item.r);
+                  })
+
+                  console.log(data)
+                }
+              });
+            }
+            getPayChart(1,'');
+            laydate.render({
+              elem: '#day'
+              , type: 'date'
+              , value: new Date()
+              , done: function (value, date, endDate) {
+                getPayChart(1,value);
+              }
+            });
+            element.render('progress')
+
+
+
+            laydate.render({
+              elem: '#user_day_date'
+              , type: 'date'
+              , value: new Date()
+              , done: function (value, date, endDate) {
+                userDayPaymentChart(value);
+              }
+            });
+            laydate.render({
+              elem: '#user_month_date'
+              , type: 'month'
+              , value: new Date()
+              , done: function (value, date, endDate) {
+                userMonthPaymentChart(value);
+              }
+            });
+
+            //用户按日收款统计
+            function userDayPaymentChart(value) {
+              //每日收款统计
+              admin.post({
+                api: 'getPayBieChart',
+                async: false,
+                data:{type:1,value:value},
+                success:function (res) {
+                  var pieData =res.result.data;
+                  var option = {
+                    title: {
+                      text: '销售总额',
+                      subtext: '￥'+res.result.all_money,
+                      subtextStyle: {
+                        fontSize: 18
+                      },
+                      x: '100',
+                      y: 'center'
+                    },
+                    legend: {
+                      orient: 'vertical',
+                      y: 'center',
+                      x: '50%',
+                      itemGap: 30,
+                      formatter: function (name) {
+                        layui.each(pieData, function (i, item) {
+                          if (item.name == name) name = name + ' {a|' + item.value + '}' + ' '+item.r;
+                        })
+                        return name;
+                      },
+                      textStyle: {
+                        rich: {
+                          a: {
+                            color: '#aaa',
+                            display: 'inline-block',
+                            width: 50
+                          }
+                        }
+                      },
+                      borderRadius: 10,
+                    },
+                    tooltip: {
+                      trigger: 'item',
+                      formatter: "{a} <br/>{b}: ￥{c} ({d}%)"
+                    },
+                    series: [{
+                      hoverAnimation: false,
+                      name: '收款账户',
+                      type: 'pie',
+                      label: {
+                        normal: { show: false },
+                        emphasis: { show: false }
+                      },
+                      labelLine: {
+                        normal: { show: false },
+                        emphasis: { show: false }
+                      },
+                      radius: ['62%', '70%'],
+                      center: ['150', '50%'],
+                      avoidLabelOverlap: false,
+                      data: pieData
+                    }]
+                  };
+                  echarts.init(document.getElementById('day-chart-index-echartBie'), 'blue').setOption(option)
+                }
+              });
+            }
+            userDayPaymentChart('');
+            //用户按月收款统计
+            function userMonthPaymentChart(value) {
+              //每日收款统计
+              admin.post({
+                api: 'getPayBieChart',
+                data:{type:2,value:value},
+                async: false,
+                success:function (res) {
+                  var pieData =res.result.data;
+                  var option = {
+                    title: {
+                      text: '销售总额',
+                      subtext: '￥'+res.result.all_money,
+                      subtextStyle: {
+                        fontSize: 18
+                      },
+                      x: '100',
+                      y: 'center'
+                    },
+                    legend: {
+                      orient: 'vertical',
+                      y: 'center',
+                      x: '50%',
+                      itemGap: 30,
+                      formatter: function (name) {
+                        layui.each(pieData, function (i, item) {
+                          if (item.name == name) name = name + ' {a|' + item.value + '}' + ' '+item.r;
+                        })
+                        return name;
+                      },
+                      textStyle: {
+                        rich: {
+                          a: {
+                            color: '#aaa',
+                            display: 'inline-block',
+                            width: 50
+                          }
+                        }
+                      },
+                      borderRadius: 10,
+                    },
+                    tooltip: {
+                      trigger: 'item',
+                      formatter: "{a} <br/>{b}: ￥{c} ({d}%)"
+                    },
+                    series: [{
+                      hoverAnimation: false,
+                      name: '收款账户',
+                      type: 'pie',
+                      label: {
+                        normal: { show: false },
+                        emphasis: { show: false }
+                      },
+                      labelLine: {
+                        normal: { show: false },
+                        emphasis: { show: false }
+                      },
+                      radius: ['62%', '70%'],
+                      center: ['150', '50%'],
+                      avoidLabelOverlap: false,
+                      data: pieData
+                    }]
+                  };
+                  echarts.init(document.getElementById('month-chart-index-echartBie'), 'blue').setOption(option)
+                }
+              });
+
+            }
+            userMonthPaymentChart('');
+
+
+
+            //折线图
+            function dayChart(x,y_one,y_two) {
+              var option = {
+                legend: {
+                  data: ['交易金额', '退款金额']
+                },
+                tooltip: {
+                  trigger: 'axis',
+                  axisPointer: { type: 'cross' }
+                },
+                xAxis: {
+                  type: 'category',
+                  data: x
+                },
+                yAxis: {
+                  max: function(val) {
+                    return val.max
+                  },
+                  min: function(val) {
+                    return val.min
+                  },
+                  type: 'value',
+                  axisLabel: { formatter: '￥{value}' },
+                  axisPointer: { snap: true }
+                },
+                series: [
+                  {
+                    name: '交易金额',
+                    type: 'line',
+                    symbolSize: 12,
+                    label: {
+                      normal: {
+                        show: true,
+                        position: 'top'
+                      }
+                    },
+                    lineStyle: {
+                      normal: {
+                        width: 5,
+                        shadowColor: '#5a8bff',
+                        shadowBlur: 40,
+                        shadowOffsetY: 10
+                      }
+                    },
+                    data: y_one
+                  },
+                  {
+                    name: '退款金额',
+                    type: 'line',
+                    symbolSize: 12,
+                    label: {
+                      normal: {
+                        show: true,
+                        position: 'top'
+                      }
+                    },
+                    lineStyle: {
+                      normal: {
+                        width: 5,
+                        shadowColor: '#5a8bff',
+                        shadowBlur: 40,
+                        shadowOffsetY: 10
+                      }
+                    },
+                    data: y_two
+                  }
+                ]
+              }
+              echarts.init(document.getElementById('index-echartLine'), 'blue').setOption(option)
+
+            }
+            //每日收款统计
+            admin.post({
+              api: 'getDayChart',
+              async: false,
+              success:function (res) {
+                var data = res.result;
+                dayChart(data.x, data.y_one, data.y_two)
+              }
+            });
+            var user_id='all';var  type=1;
+            element.on('tab(index-chart)', function(data) {
+              user_id = this.getAttribute('lay-id')?this.getAttribute('lay-id'):0;
+              if(this.getAttribute('lay-id')){
+                user_id = this.getAttribute('lay-id')?this.getAttribute('lay-id'):0;
+              }else{
+                type=data.index==0?1:2;
+              }
+              if(type==1){
+                //每日收款统计
+                admin.post({
+                  api: 'getDayChart',
+                  async: false,
+                  data:{user_id:user_id},
+                  success:function (res) {
+                    var data = res.result;
+                    dayChart(data.x, data.y_one, data.y_two)
+                  }
+                });
+              }else{
+                //每日收款统计
+                admin.post({
+                  api: 'getMonthChart',
+                  async: false,
+                  data:{user_id:user_id},
+                  success:function (res) {
+                    var data = res.result;
+                    dayChart(data.x, data.y_one, data.y_two)
+                  }
+                });
+              }
+              //createChart()
+            })
+            //今日数据统计
+            admin.post({
+              api: 'getTodayUser',
+              async: false,
+              success:function (res) {
+                var data = res.result;
+                $('#user_num').html(data.user_num?data.user_num:0)
+                $('#ip_num').html(data.ip_num?data.ip_num:0)
+                $('#amount').html(data.amount?data.amount:0)
+                $('#refund_amount').html(data.refund_amount?data.refund_amount:0)
+              }
+            });
+            setInterval(function () {
+              if(order_type==1){
+                table.reload('index-tableOrder', {
+                  where: {type:order_type,value:$('#day_value').val()}, page: false
+                });
+              }else{
+                table.reload('index-tableOrder', {
+                  where: {type:order_type,value:$('#month_value').val()}, page: false
+                });
+              }
+
+              userDayPaymentChart($('#user_day_date').val());
+              userMonthPaymentChart($('#user_month_date').val());
+              //折线图
+              if(type==1){
+                //每日收款统计
+                admin.post({
+                  api: 'getDayChart',
+                  async: false,
+                  data:{user_id:user_id},
+                  success:function (res) {
+                    var data = res.result;
+                    dayChart(data.x, data.y_one, data.y_two)
+                  }
+                });
+              }else{
+                //每日收款统计
+                admin.post({
+                  api: 'getMonthChart',
+                  async: false,
+                  data:{user_id:user_id},
+                  success:function (res) {
+                    var data = res.result;
+                    dayChart(data.x, data.y_one, data.y_two)
+                  }
+                });
+              }
+
+              //今日数据统计
+              admin.post({
+                api: 'getTodayUser',
+                async: false,
+                success:function (res) {
+                  var data = res.result;
+                  $('#user_num').html(data.user_num?data.user_num:0)
+                  $('#ip_num').html(data.ip_num?data.ip_num:0)
+                  $('#amount').html(data.amount?data.amount:0)
+                  $('#refund_amount').html(data.refund_amount?data.refund_amount:0)
+                }
+              });
+            },60000);
+          }
+  )
+
+</script>

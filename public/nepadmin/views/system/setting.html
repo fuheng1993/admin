@@ -1,0 +1,360 @@
+<div class="layui-fluid" lay-title="系统配置">
+
+        <div class="layui-row layui-col-space15">
+        <div class="layui-col-md6">
+            <form class="layui-form" action="" lay-filter="system-form">
+                <div class="layui-card">
+                <div class="layui-card-header">基本信息</div>
+                <div class="layui-card-body">
+                    <div class="layui-row layui-col-space10 layui-form-item">
+
+                        <div class="layui-col-lg12">
+                            <label class="layui-form-label">网站名称：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="title" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg12">
+                            <label class="layui-form-label">关键字：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="keywords" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg12">
+                            <label class="layui-form-label">描述：</label>
+                            <div class="layui-input-block">
+
+                                <input type="text" name="description" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">底部版权：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="copyright" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">备案号：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="icp" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">网站地址：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="address" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">网站电话：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="tel" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">400电话：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="phone" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">网站QQ：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="qq" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">网站邮箱：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="email" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <hr class="layui-bg-gray">
+                        <div class="layui-col-lg12">
+                            <label class="layui-form-label">appKey</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="app_key" lay-verify="required" placeholder="证件照接口AppKey" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg12">
+                            <label class="layui-form-label">appSecret</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="app_secret" lay-verify="required" placeholder="证件照接口AppSecret" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg12">
+                            <label class="layui-form-label">appCode</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="app_code" lay-verify="required" placeholder="证件照接口appCode" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <hr class="layui-bg-gray">
+                        <div class="layui-col-lg12">
+                            <label class="layui-form-label">支付宝商户号：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="zfb_mchid" lay-verify="required" placeholder="支付宝商户号" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg12">
+                            <label class="layui-form-label">支付宝公钥：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="zfb_alipay_key" lay-verify="required" placeholder="支付宝公钥" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg12">
+                            <label class="layui-form-label">支付私钥：</label>
+                            <div class="layui-input-block">
+                                <textarea name="zfb_private_key" class="layui-textarea" placeholder="支付宝支付私钥"></textarea>
+
+                            </div>
+                        </div>
+                        <div class="layui-col-lg12">
+                            <label class="layui-form-label">支付公钥：</label>
+                            <div class="layui-input-block">
+                                <textarea name="zfb_public_key" class="layui-textarea" placeholder="支付宝支付公钥"></textarea>
+
+                            </div>
+                        </div>
+
+
+                        <hr class="layui-bg-gray">
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">APPID：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="appid" lay-verify="required" placeholder="公众号APPID" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">secret：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="secret" lay-verify="required" placeholder="公众号Secret" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">微信商户号</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="mchid" lay-verify="required" placeholder="微信商户号" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">支付秘钥</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="key" lay-verify="required" placeholder="微信商户号支付秘钥" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">证书cert.pem</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="cert_pem" lay-verify="required" placeholder="支付证书cert.pem " autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">证书key.pem</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="key_pem" lay-verify="required" placeholder="支付证书key.pem " autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">公众号名称</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="name" lay-verify="required" placeholder="公众号名称" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">微信号</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="en_name" lay-verify="required" placeholder="微信号名称" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg6">
+                            <label class="layui-form-label">公众号账号</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="account" lay-verify="required" placeholder="公众号账号" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+
+                        <hr class="layui-bg-gray">
+                        <div class="layui-col-lg12">
+                            <label class="layui-form-label">css版本号：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="version"  placeholder="" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg12">
+                            <label class="layui-form-label">客服地址：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="service_url"  placeholder="" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-col-lg12">
+                            <label class="layui-form-label">CDN地址：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="cdn"  placeholder="" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn" lay-submit lay-filter="system-form-submit">更新配置</button>
+                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </form>
+
+        </div>
+        <div class="layui-col-md6">
+            <div class="layui-col-md6">
+            <div class="layui-card">
+                <div class="layui-card-header">公众号二维码</div>
+                <div class="layui-card-body">
+                    <div class="layui-row layui-col-space10 layui-form-item">
+                        <button type="button" class="layui-btn layui-btn-normal" id="upload">上传公众号二维码</button>
+                        <div class="layui-upload-list">
+                            <img class="layui-upload-img" id="upload-qr-code" width="200px" height="200px">
+                            <p id="demoText"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+            <div class="layui-col-md6">
+            <div class="layui-card">
+                <div class="layui-card-header">公众号logo</div>
+                <div class="layui-card-body">
+                    <div class="layui-row layui-col-space10 layui-form-item">
+                        <button type="button" class="layui-btn layui-btn-normal" id="upload_logo">上传公众号logo</button>
+                        <div class="layui-upload-list">
+                            <img class="layui-upload-img" id="upload-logo" width="200px" height="200px">
+                            <p id="demoText1"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+    layui.use(['admin', 'form','upload'], function (admin, form) {
+        var $ = layui.$;
+        var upload = layui.upload;
+        var element = layui.element;
+        var token = admin.loginToken;
+        //二维码图片上传
+        var uploadInst = upload.render({
+            elem: '#upload'
+            ,headers: {token: token}
+            , url: '/admin/system/upload'
+            , before: function (obj) {
+                //预读本地文件示例，不支持ie8
+                obj.preview(function (index, file, result) {
+                    $('#upload-qr-code').attr('src', result);
+                });
+            }
+            , done: function (res) {
+                if (res.code != 200) {
+                    return layer.msg('公众号二维码上传失败');
+                }else{
+                    return layer.msg('公众号二维码更新成功');
+                }
+            }
+            , error: function () {
+                //演示失败状态，并实现重传
+                var demoText = $('#demoText');
+                demoText.html('<span style="color: #FF5722;">上传失败</span> <a class="layui-btn layui-btn-xs demo-reload">重试</a>');
+                demoText.find('.demo-reload').on('click', function () {
+                    uploadInst.upload();
+                });
+            }
+        })
+        //logo图片上传
+        var uploadInst = upload.render({
+            elem: '#upload_logo'
+            ,headers: {token: token}
+            , url: '/admin/system/uploadLogo'
+            , before: function (obj) {
+                //预读本地文件示例，不支持ie8
+                obj.preview(function (index, file, result) {
+                    $('#upload-logo').attr('src', result);
+                });
+            }
+            , done: function (res) {
+                if (res.code != 200) {
+                    return layer.msg('公众号logo上传失败');
+                }else{
+                    return layer.msg('公众号logo更新成功');
+                }
+            }
+            , error: function () {
+                //演示失败状态，并实现重传
+                var demoText = $('#demoText1');
+                demoText.html('<span style="color: #FF5722;">上传失败</span> <a class="layui-btn layui-btn-xs demo-reload">重试</a>');
+                demoText.find('.demo-reload').on('click', function () {
+                    uploadInst.upload();
+                });
+            }
+        })
+        //获取系统配置信息
+        admin.post({
+            api: 'getSystem',
+            async: false,
+            success:function (res) {
+                console.log(res.result)
+                $('#upload-qr-code').attr('src',res.result.qr_code)
+                $('#upload-logo').attr('src',res.result.logo)
+                //给表单赋值
+                form.val("system-form", res.result);
+
+            }
+        });
+        //更新系统配置
+        form.on('submit(system-form-submit)', function (data) {
+            admin.post({
+                api: 'saveSystem',
+                async: false,
+                data:data.field,
+                success:function (res) {
+                    admin.modal.success(res.msg,{area:['400'],end:function () { layui.view.tab.refresh();}})
+                }
+            });
+            return false;
+        });
+        //更新邮箱配置
+        form.on('submit(email-form-submit)', function (data) {
+            admin.post({
+                api: 'saveEmail',
+                async: false,
+                data:data.field,
+                success:function (res) {
+                    admin.modal.success(res.msg,{area:['400'],end:function () {layui.view.tab.refresh();}})
+                }
+            });
+            return false;
+        });
+        //测试邮箱发送
+        $('#sendMessage').on('click',function () {
+            var data =  form.val("email-form")
+            layer.prompt({
+                formType: 3,
+                value: '',
+                title: '请输入接收邮件的邮箱(不能是发送邮箱)',
+                area: ['600px', '350px'] //自定义文本域宽高
+            }, function(value, index, elem){
+                admin.post({
+                    api: 'sendMessageTest',
+                    async: false,
+                    data:{'to_email':value,'email':data.email,'email_password':data.email_password},
+                    success:function (res) {
+                        admin.modal.success(res.msg)
+                    }
+                });
+            });
+            return false;
+        })
+    });
+</script>

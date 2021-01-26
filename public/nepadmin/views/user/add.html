@@ -1,0 +1,128 @@
+<div class="layui-fluid"id="user-add" lay-title="新增用户支付账户">
+    <style>.layui-transfer-active .layui-btn {color: #ff5722;}.layui-transfer-active .layui-btn-disabled {color: #C9C9C9;}</style>
+    <div class="layui-row layui-col-space15" style="padding-top: 20px;">
+        <form class="layui-form" action="" lay-filter="user-form-element">
+            <div class="layui-col-md12">
+                <div class="layui-card">
+                    <div class="layui-card-body">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">账号*</label>
+                                <div class="layui-input-block">
+                                    <input type="text" name="username" id="username" lay-verify="required" placeholder="请输入用户账号" autocomplete="off" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">密码*</label>
+                                <div class="layui-input-block">
+                                    <input type="password" name="password" lay-verify="required" placeholder="请输入密码" autocomplete="off" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">昵称*</label>
+                                <div class="layui-input-block">
+                                    <input type="text" name="nickname" id="nickname" lay-verify="required" placeholder="用户昵称" autocomplete="off" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">联系电话*</label>
+                                <div class="layui-input-block">
+                                    <input type="text" name="tel"  id="tel" lay-verify="required"placeholder="联系人电话" autocomplete="off" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">测试员</label>
+                                <div class="layui-input-block">
+                                    <input type="checkbox" name="is_test" value="1" id="is_test" lay-skin="switch" checked lay-text="是|否">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">账户状态</label>
+                                <div class="layui-input-block">
+                                    <input type="checkbox" name="status" value="1" lay-skin="switch" checked lay-text="开启|关闭">
+                                </div>
+                            </div>
+
+                        <div class="layui-form-item">
+                            <input type="hidden" name="avatar" id="avatar">
+                            <label class="layui-form-label">头像：</label>
+                            <div class="layui-input-block">
+                                <button type="button" class="layui-btn layui-btn-warm" id="upload">上传头像</button>
+                                <div class="layui-upload-list">
+                                    <img class="layui-upload-img" id="upload-user-image" width="100px" height="100px">
+                                    <p id="demoText"></p>
+                                </div>
+                            </div>
+                        </div>
+                            <div class="layui-form-item">
+
+                                <div class="layui-input-block">
+                                    <button class="layui-btn" lay-submit lay-filter="user-form-element">立即提交</button>
+                                    <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                                </div>
+                            </div>
+
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    layui.use(['admin', 'form', 'jquery','xmSelect','upload','transfer','util'], function (admin, table, form) {
+        var $ = layui.$
+            ,transfer = layui.transfer
+            ,layer = layui.layer
+            ,util = layui.util
+            ,form =layui.form
+            ,upload =layui.upload;
+
+        var view = $('#user-add');
+        var token = admin.loginToken;
+        form.render(null, 'user-form-element');
+        //普通图片上传
+        var uploadInst = upload.render({
+            elem: '#upload'
+            ,headers: {token: token}
+            , url: '/api/common/uploadImage'
+            , before: function (obj) {
+                //预读本地文件示例，不支持ie8
+                obj.preview(function (index, file, result) {
+                    $('#upload-user-image').attr('src', result);
+                });
+            }
+            , done: function (res) {
+                if (res.code != 200) {
+                    return layer.msg('上传失败');
+                }else{
+                    $('#avatar').val(res.result.image)
+                }
+            }
+            , error: function () {
+                //演示失败状态，并实现重传
+                var demoText = $('#demoText');
+                demoText.html('<span style="color: #FF5722;">上传失败</span> <a class="layui-btn layui-btn-xs demo-reload">重试</a>');
+                demoText.find('.demo-reload').on('click', function () {
+                    uploadInst.upload();
+                });
+            }
+        })
+        var index = parent.layer.index
+        form.on('submit(user-form-element)', function (data) {
+            console.log(data.field)
+            admin.post({
+                api: 'addUser',
+                async: false,
+                data:data.field,
+                success:function (res) {
+                    if(res.status==1){
+                        admin.modal.success(res.msg,{end:function () { parent.layer.close(index)}})
+                    }else{
+                        admin.modal.warn(res.msg)
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>

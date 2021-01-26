@@ -1,0 +1,33 @@
+<style>
+    #VIEW-module-helper .qrcode-image {
+        padding: 20px;
+        border: 1px solid #f1f1f1;
+        display: inline-block;
+        margin: 15px 0;
+    }
+</style>
+
+<div class="layui-fluid" id="view-pay" lay-title="helper 模块">
+    <div class="layui-row layui-col-space10">
+        <div class="layui-col-lg12">
+            <div class="layui-card">
+                <div class="layui-card-body">
+                    <h3 class="nepadmin-c-red">注：能看到“立即支付”按钮说明支付账户配置成功（不放心可以支付1分钱测试）</h3>
+                    <hr>
+                    <h3>使用微信扫一扫</h3>
+                    <div class="qrcode-image"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    layui.use(['admin', 'code', 'helper', 'qrcode', 'upload'], function (admin, code, helper) {
+        var $ = layui.jquery;
+        var view = $('#view-pay');
+        var wechat_id =POPUP_DATA.wechat_id
+        //alert(layui.config()['conf']['hostUrl']+'/test/pay/index?wechat_id='+wechat_id)
+        helper.qrcode(view.find('.qrcode-image'), layui.config()['conf']['hostUrl']+'/test/pay/index?wechat_id='+wechat_id);
+
+    })
+</script>

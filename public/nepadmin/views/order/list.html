@@ -1,0 +1,366 @@
+<link rel="stylesheet" href="./nepadmin/css/formSelects.css" media="all">
+<style>
+  .xm-select-dl{
+    top:unset !important;
+  }
+  .layui-table-cell {  padding: 0 5px;  }
+</style>
+<div class="layui-fluid" id="order-list" lay-title="订单列表">
+  <div class="layui-row layui-col-space10">
+    <div class="layui-col-md12">
+      <div class="layui-card">
+        <div class="layui-card-header">筛选数据</div>
+        <div class="layui-card-body">
+            <form class="layui-row layui-col-space10 layui-form" id="search_order">
+<!--              <div class="layui-input-inline" style="width: 80px">-->
+<!--                <select name="url">-->
+<!--                  <option value="">推广平台</option>-->
+<!--                  <option value="360">360</option>-->
+<!--                  <option value="sg">搜狗</option>-->
+<!--                  <option value="sm">神马</option>-->
+<!--                  <option value="bd">百度</option>-->
+<!--                  <option value="空白">空白</option>-->
+<!--                </select>-->
+<!--              </div>-->
+              <div class="layui-input-inline" style="width: 80px">
+                <select name="is_pay">
+                  <option value="">订单状态</option>
+                  <option value="2">待支付</option>
+                  <option value="1" selected>已支付</option>
+                </select>
+              </div>
+              <div class="layui-input-inline" style="width: 80px">
+                <select name="is_refund">
+                  <option value="">退款状态</option>
+                  <option value="2">待退款</option>
+                  <option value="1">已退款</option>
+                </select>
+              </div>
+
+
+              <div class="layui-input-inline">
+                <input type="text" name="user_order_no" class="layui-input" autocomplete="off"placeholder="订单号" />
+              </div>
+              <div class="layui-input-inline">
+                <input type="text" name="order_no" class="layui-input" autocomplete="off"placeholder="商户订单号" />
+              </div>
+              <div class="layui-input-inline" style="width: 120px">
+                <input type="text" name="name" class="layui-input" autocomplete="off" placeholder="手机号或姓名" />
+              </div>
+
+              <div class="layui-input-inline" style="width: 100px">
+                <input type="text" name="province" class="layui-input" autocomplete="off" placeholder="省份" />
+              </div>
+              <div class="layui-input-inline" style="width: 100px">
+                <input type="text" name="city" class="layui-input" autocomplete="off" placeholder="城市" />
+              </div>
+              <div class="layui-input-inline" style="width: 120px">
+                <input type="text" class="layui-input" name="start" id="start" autocomplete="off" placeholder="起始时间">
+              </div>
+              <div class="layui-input-inline" style="width: 120px">
+                <input type="text" class="layui-input"  name="end" id="end" autocomplete="off" placeholder="截取时间">
+              </div>
+              <div class="layui-input-inline">
+                <div class="layui-btn  " lay-submit lay-filter="search-order">筛选</div>
+                <div class="layui-btn   layui-btn-primary">重置</div>
+              </div>
+            </form>
+        </div>
+      </div>
+    </div>
+    <div class="layui-col-md12">
+      <div class="layui-card">
+        <div class="layui-card-body nepadmin-table-full">
+          <div class="layui-btn-container nepadmin-pad-t10 nepadmin-pad-l10">
+            <div class="layui-btn-container">
+              <div class="layui-btn layui-btn-sm layui-btn-danger table-action" data-type="del">批量删除</div>
+              <div class="layui-btn layui-btn-sm table-action" data-type='close' >批量导出订单</div>
+              <div class="layui-btn layui-btn-sm layui-btn-primary table-action" data-type="refresh">刷新页面</div>
+            </div>
+          </div>
+          <table id="order-list-table" lay-filter="order-list-table"></table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+<script type="text/html" id="order_bar">
+  <div class="layui-btn-group">
+  <a class="layui-btn layui-btn-sm" lay-event="details">详情</a>
+
+  <a class="layui-btn layui-btn-danger layui-btn-sm" lay-event="refund">退款</a>
+  </div>
+</script>
+<script>
+  layui.use(['admin', 'table', 'form', 'dropdown', 'jquery','xmSelect','laydate'], function (admin, table, form, dropdown, $) {
+      var table = layui.table;
+      var laydate = layui.laydate;
+      var xmSelect = layui.xmSelect;
+      var view = $('#order-list');
+      var tableFilter = 'order-list-table';
+      var ishttps = 'https:' == document.location.protocol ? true : false;
+      var http = '';
+      if(ishttps) {
+        http = 'https';
+      }else{
+        http = 'http'
+      }
+      var host = http+'://'+window.location.host
+
+      laydate.render({elem: '#start',type:'datetime'});
+      laydate.render({elem: '#end',type:'datetime'});
+      form.render();
+      admin.renderTable({
+          elem: '[lay-filter="' + tableFilter + '"]',
+          where:{is_pay:1},
+          id: 'order-list-table',
+          api: 'getOrderList',
+          page: true,
+          totalRow: true,
+          limits: [10,20,30,50, 100,200,300, 500],
+        cols: [[
+          {title: '', type: 'checkbox', fixed: true, width: 60},
+          {width: 180, title: '自定义单号', field: 'user_order_no', totalRowText: '合计'},
+          {width: 180, title: '商户单号', field: 'order_no'},
+          {width: 150, title: '下单时间', field: 'create_time'},
+          {width: 110, title: '手机号', field: 'tel'},
+          {width: 70, title: '价格', field: 'price', totalRow: true},
+          {
+            width: 70, title: '支付方式', field: 'pay_way', templet: function (d) {
+              switch (d.pay_way) {
+                case 1:
+                  return '<span class="layui-badge layui-bg-green">微信支付</span>';
+                  break;
+                case 3:
+                  return '<span class="layui-badge layui-bg-blue">支付宝</span>';
+                  break;
+                case 2:
+                  return '<span class="layui-badge layui-bg-green">微信H5</span>';
+                  break;
+                case 4:
+                  return '<span class="layui-badge layui-bg-blue">支付宝WAP</span>';
+                  break;
+                default:
+                  return '<span class="layui-badge">未知</span>';
+                  break;
+              }
+            }
+          },
+          {
+            width: 70, title: '付款状态', field: 'is_pay', templet: function (d) {
+              switch (d.is_pay) {
+                case 1:
+                  return '<span class="layui-badge layui-bg-green">已支付</span>';
+                  break;
+                case 0:
+                  return '<span class="layui-badge layui-bg-orange">待支付</span>';
+                  break;
+              }
+            }
+          },
+          {width: 150, title: '付款时间', field: 'pay_time'},
+          {
+            width: 70, title: '退款状态', field: 'is_pay', templet: function (d) {
+              return d.is_refund == 1 ? '<span class="layui-badge layui-bg-green">已退款</span>' : '<span class="layui-badge">待退款</span>';
+            }
+          },
+          {width: 80, title: '省份', field: 'province'},
+          {width: 80, title: '城市', field: 'city'},
+          {title: '秘钥', field: 'secret_key'},
+          // {title: '关键字', field: 'keyword'},
+          {width: 110, title: '操作', fixed: 'right', toolbar: '#order_bar'},
+
+        ]]
+      });
+      function post_form(URL, PARAMS) { var temp_form = document.createElement("form");
+      temp_form .action = URL+'?'+PARAMS;
+
+      temp_form .target = "_blank";
+      temp_form .method = "post";
+      temp_form .style.display = "none";
+      document.body.appendChild(temp_form);
+      temp_form .submit();
+    }
+      // 监听筛选用户
+      form.on('submit(search-order)', function (data) {
+        table.reload( 'order-list-table', {
+          where: data.field
+          ,page: {
+            curr: 1 //重新从第 1 页开始
+          }
+        });
+        return false;
+      });
+      view.find('.table-action').click(function () {
+          var type = $(this).attr('data-type')
+          var checkStatus = table.checkStatus('order-list-table')
+              ,data = checkStatus.data;
+          var ids = [];
+          $.each(data,function(i){ ids[i] = data[i]['id']; });
+          var checkedCount = table.checkStatus(tableFilter).data.length;
+          switch (type) {
+              case 'close':
+                  post_form('/admin/order/expUser',$('#search_order').serialize())
+                  break;
+
+              case   'refresh':
+                  layui.view.tab.refresh();
+                  break;
+              case   'del':
+                  if (checkedCount == 0) {
+                      layer.msg('请先选择要删除的订单');
+                  } else {
+                      layer.open({
+                          title: '温馨提示'
+                          ,content: '确定删除选中订单？删除后数据将不可恢复！'
+                          ,btn: ['确认','取消']
+                          ,yes:function () {
+                              admin.post({
+                                  api: 'delOrder',
+                                  async: false,
+                                  data:{ids:ids},
+                                  success:function (res) {
+                                      if(res.status==1){
+                                          admin.modal.success(res.msg,{end:function () {
+                                              table.reload( 'order-list-table');
+                                          }})
+                                      }else{
+                                          admin.modal.warn(res.msg)
+                                      }
+
+                                  }
+                              });
+                          }
+                          ,success: function(layero, index){
+                              this.enterEsc = function(event){
+                                  if(event.keyCode === 13){
+                                      admin.post({
+                                          api: 'delOrder',
+                                          async: false,
+                                          data:{ids:ids},
+                                          success:function (res) {
+                                              if(res.status==1){
+                                                  admin.modal.success(res.msg,{end:function () {
+                                                      table.reload( 'order-list-table');
+                                                  }})
+                                              }else{
+                                                  admin.modal.warn(res.msg)
+                                              }
+
+                                          }
+                                      });
+                                      return false; //阻止系统默认回车事件
+                                  }
+                              };
+                              $(document).on('keydown', this.enterEsc);	//监听键盘事件，关闭层
+                          }
+                          ,end: function(){
+                              $(document).off('keydown', this.enterEsc);	//解除键盘关闭事件
+                          }
+                      });
+
+                  }
+                  break;
+          }
+      })
+      //监听工具条
+      table.on('tool(order-list-table)', function(obj){
+        let data = obj.data;
+        let layEvent = obj.event;
+        let tr = obj.tr;
+        if(layEvent === 'details'){
+          admin.popup({
+            title:'订单详情',
+            url:'/order/details',
+            area: ['600px', '98%'],
+            //传递参数，弹出的页面可以使用 POPUP_DATA.username 获取值
+            data:{data:data},
+            end:function () {
+              table.reload( 'order-list-table');
+            }
+          })
+          //do somehing
+        } else if(layEvent === 'refund'){
+          layer.open({
+            title: '温馨提示'
+            ,content: '确定将此订单退款给用户？'
+            ,btn: ['确认','取消']
+            ,yes:function () {
+              admin.post({
+                api: 'refundOrder',
+                async: false,
+                data:{id:data.id},
+                success:function (res) {
+                  if(res.status==1){
+                    admin.modal.success(res.msg,{end:function () {
+                        table.reload( 'order-list-table');
+                      }})
+                  }else{
+                    admin.modal.warn(res.msg)
+                  }
+
+                }
+              });
+            }
+            ,success: function(layero, index){
+              this.enterEsc = function(event){
+                if(event.keyCode === 13){
+                  admin.post({
+                    api: 'refundOrder',
+                    async: false,
+                    data:{id:data.id},
+                    success:function (res) {
+                      if(res.status==1){
+                        admin.modal.success(res.msg,{end:function () {
+                            table.reload( 'order-list-table');
+                          }})
+                      }else{
+                        admin.modal.warn(res.msg)
+                      }
+
+                    }
+                  });
+                  return false; //阻止系统默认回车事件
+                }
+              };
+              $(document).on('keydown', this.enterEsc);	//监听键盘事件，关闭层
+            }
+            ,end: function(){
+              $(document).off('keydown', this.enterEsc);	//解除键盘关闭事件
+            }
+          });
+        } else if(layEvent === 'edit'){
+          admin.popup({
+            title:'订单详情',
+            url:'/user/edit',
+            area: ['60%', '98%'],
+            //传递参数，弹出的页面可以使用 POPUP_DATA.username 获取值
+            data:{data:data},
+            end:function () {
+              table.reload( 'order-list-table');
+            }
+          })
+        }else if(layEvent === 'view'){
+
+          var http = document.location.protocol=='https:'?'https://':"http://";
+
+          layer.open({
+            type: 2,
+            title: data.name+'的报告',
+            shadeClose: true,
+            shade: false,
+            maxmin: true, //开启最大化最小化按钮
+            area: ['500px', '98%'],
+
+            content: http+window.location.host+'/viewDetails?str=td&id='+data.id
+          });
+
+        }
+      });
+
+
+
+  })
+</script>

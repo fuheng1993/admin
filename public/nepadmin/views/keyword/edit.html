@@ -1,0 +1,67 @@
+<div class="layui-fluid"id="keyword-edit" lay-title="编辑关键词">
+    <div class="layui-row layui-col-space15" style="margin-top: 20px">
+        <form class="layui-form" action="" lay-filter="edit-keyword-form">
+            <input type="hidden" name="id" id="id" >
+            <div class="layui-form-item">
+                <label class="layui-form-label">展示关键词</label>
+                <div class="layui-input-block">
+                    <input type="text" name="keyword" lay-verify="required" placeholder="展示关键词" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">匹配关键词</label>
+                <div class="layui-input-block">
+                    <input type="text" name="matching" lay-verify="required" placeholder="匹配关键词" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">匹配排序</label>
+                <div class="layui-input-block">
+                    <input type="number" name="sort" lay-verify="required" placeholder="值越小越优先排序" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn" lay-submit lay-filter="edit-keyword-element">立即提交</button>
+                    <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    layui.use(['admin', 'form', 'jquery','xmSelect','upload'], function (admin, table, form) {
+        var $ = layui.jquery;
+        var form =layui.form;
+        var upload =layui.upload;
+        var view = $('#keyword-edit');
+        //var formSelects = layui.formSelects;
+        var xmSelect = layui.xmSelect;
+        var element = layui.element;
+        var token = admin.loginToken;
+        var popup_data = POPUP_DATA.data
+
+        form.val('edit-keyword-form',popup_data)
+        form.render('checkbox');
+        form.render(null, 'edit-keyword-form');
+        console.log(popup_data)
+        var index = parent.layer.index
+        form.on('submit(edit-keyword-element)', function (data) {
+            admin.post({
+                api: 'editKeyword',
+                async: false,
+                data:data.field,
+                success:function (res) {
+                    if(res.result.status==1){
+                        admin.modal.success(res.msg,{end:function () { parent.layer.close(index)}})
+                    }else{
+                        admin.modal.warn(res.msg)
+                    }
+
+                }
+            });
+            return false;
+        });
+    });
+</script>

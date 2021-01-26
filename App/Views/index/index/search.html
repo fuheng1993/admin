@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>查询订单-{$system.title}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/public/layui/css/layui.css"  media="all">
+    <!-- 注意：如果你直接复制所有代码到本地，上述css路径需要改成你本地的 -->
+    <style>
+        .layui-table-cell {  padding: 0 5px;  }
+    </style>
+</head>
+<body style="background-color: #F2F2F2;">
+
+
+<div style="padding: 20px; background-color: #F2F2F2;">
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-md8 layui-col-md-offset2 ">
+
+            <div class="layui-col-md12 layui-col-space15" >
+                <div style="background: white;padding-top: 10px">
+                    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 20px; ">
+                        <legend><a href="/">{$system.title}  返回首页</a></legend>
+                    </fieldset>
+                </div>
+                <div class="layui-col-md8">
+                    <div class="layui-card">
+                        <div class="layui-card-header">查询订单（输入手机号或者商户订单号，二选一）</div>
+                        <div class="layui-card-body">
+                            <form class="layui-row layui-col-space10 layui-form" id="search">
+                                <div class="layui-input-inline">
+                                    <input type="text" name="tel" class="layui-input" value="{$tel??''}" placeholder="您下单时填写的手机号" />
+                                </div>
+                                <div class="layui-input-inline">
+                                    <input type="text" name="order_no" class="layui-input" value="{$order_no??''}" placeholder="支付成功的商户订单号" />
+                                </div>
+                                <div class="layui-input-inline">
+                                    <div class="layui-btn  layui-btn-normal" lay-submit lay-filter="search-order">搜索</div>
+
+                                </div>
+                            </form>
+                            <table  id="order" lay-data="{skin:'line', even:true, size:'sm'}"></table>
+
+                        </div>
+                    </div>
+                    <div class="layui-card">
+                        <div class="layui-card-header"> 常见问题及教程</div>
+                        <div class="layui-card-body">
+                            <div class="peripheral">
+                                <div class="issue">
+                                    <a href="http://note.youdao.com/s/3FOd9d6e" target="_blank">【教程】如何购买激活码？我该购买哪个版本？</a>
+                                </div>
+                                <hr>
+                                <div class="issue">
+                                    <a href="http://note.youdao.com/s/Uus6MiSx" target="_blank">【教程】如何查询我的系统版本？</a>
+                                </div>
+                                <hr>
+                                <div class="issue">
+                                    <a href="http://note.youdao.com/s/KLOvpCT5" target="_blank">【教程】购买后如何使用激活码？</a>
+                                </div>
+                                <hr>
+                                <div class="issue">
+                                    <a href="http://note.youdao.com/s/7HEaReuI" target="_blank">【教程】如何查询系统是否永久激活？</a>
+                                </div>
+                                <hr>
+                                <div class="issue">
+                                    <a href="http://note.youdao.com/s/B5V8vR4m" target="_blank">【教程】“支持重装”是什么意思？</a>
+                                </div>
+                                <hr>
+                                <div class="issue">
+                                    <a href="http://note.youdao.com/s/VSL6LAXf" target="_blank">【教程】“激活密钥”与“激活工具”有什么区别？“激活工具”有什么危害？</a>
+                                </div>
+                                <hr>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="layui-col-md4" >
+                    <div class="layui-card">
+                        <div class="layui-card-header">联系客服</div>
+                        <div class="layui-card-body" style="text-align: center;padding-bottom: 40px">
+                          <img src="{$system.qr_code}" width="80%">
+                            <h2>微信扫一扫联系客服</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+
+
+<script src="/public/layui/layui.js" charset="utf-8"></script>
+<!-- 注意：如果你直接复制所有代码到本地，上述js路径需要改成你本地的 -->
+<script>
+    layui.use(['element', 'layer','table','form'], function(){
+        var element = layui.element;
+        var layer = layui.layer;
+        var table = layui.table;
+        var form = layui.form;
+
+        table.render({
+            elem: '#order'
+            ,url:'/getMyOrder'
+            ,where:{'tel':"{$tel??''}",'order_no':"{$order_no??''}"}
+            ,page: true
+            ,cols: [[
+                ,{field:'category', width:120, title: '产品名称'}
+                ,{field:'secret_key',  title: '产品秘钥'}
+                ,{field:'tel', width:100, title: '手机号'}
+                ,{field:'order_no',width:170, title: '商户订单号'}
+                ,{field:'pay_time',width:146,  title: '付款时间'}
+            ]]
+
+        });
+        table.reload( 'order');
+        // 监听筛选用户
+        form.on('submit(search-order)', function (data) {
+            table.reload( 'order', {
+                where: data.field
+                ,page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+            });
+            return false;
+        });
+
+
+    });
+</script>
+
+</body>
+</html>

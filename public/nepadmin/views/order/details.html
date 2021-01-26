@@ -1,0 +1,83 @@
+<div class="layui-fluid nepadmin-pad0 nepadmin-mar0" id="VIEW-list-order-details" lay-title="订单详情">
+  <style>.param{ color: #666666;}  .content{color: #01AAED}</style>
+  <div class="layui-card" style="margin-bottom: 0; width: 600px !important;">
+    <div class="layui-card-body">
+      <div class="layui-row">
+        <table class="layui-table" >
+          <colgroup><col width="200px" /><col width="350px"/></colgroup>
+          <th width="200">参数</th><th width="350px">内容</th></tr>
+          <tbody id="body">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  layui.use(['admin', 'code', 'helper', 'qrcode', 'upload'], function (admin, code, helper) {
+    var $ = layui.jquery;
+    var view = $('#VIEW-list-order-details');
+    var popup_data = POPUP_DATA.data
+    var data = {
+      'id':'订单ID',
+      'order_id':'支付订单ID',
+      'user_order_no':'系统订单号',
+      'order_no':'商户订单号',
+      'price':'订单金额',
+      'remark':'商品信息',
+      'img_url':'证件照',
+      'img_list_url':'排版证件照',
+      'upload_img_url':'上传的图片',
+      'img_list_url_water':'证件照排版水印',
+      'img_url_water':'证件照水印',
+      'photo_key':'执照证件照排版秘钥',
+
+      'ip':'ip',
+      'is_pay':'付款状态',
+      'transaction_id':'交易流水号',
+      'pay_time':'付款时间',
+      'is_refund':'退款状态',
+      'refund_time':'退款时间',
+      'refund_trade_no':'退款单号',
+
+      'create_time':'创建时间',
+      'update_time':'最后更新时间',
+
+      'result':'结果',
+      // 'result':'结果'
+    }
+    layui.each(data,function (index,item) {
+      if(index=='sign'){
+        popup_data[index] = popup_data[index]?'<img src="'+popup_data[index]+'">':'';
+      }
+      if(index=='is_pay'){
+        popup_data[index] = popup_data[index]==1?'已付款':'待付款';
+      }
+      if(index=='is_refund'){
+        popup_data[index] = popup_data[index]==1?'已退款':'待退款';
+      }
+      if(index=='is_close'){
+        popup_data[index] = popup_data[index]==1?'已关闭':'未关闭';
+      }
+      if(index=='result'){
+        popup_data[index] = '<pre class="layui-code" style="max-width: 350px !important;">'+popup_data[index]+"</pre>";
+      }
+      if(index=='url'){
+        var ishttps = 'https:' == document.location.protocol ? true : false;
+        var http = '';
+        if(ishttps) {
+          http = 'https';
+        }else{
+          http = 'http'
+        }
+        var host = http+'://'+window.location.host
+        popup_data[index] = host+'/pictures?transaction_id='+popup_data['transaction_id'];
+      }
+      $('#body').append(' <tr><td class="param" style="width: 140px  !important;">'+item+'</td><td class="content" style="width: 350px !important;">'+popup_data[index]+'</td></tr>')
+
+    })
+
+
+  })
+
+</script>

@@ -1,0 +1,150 @@
+<div class="layui-fluid"id="wechat-edit" lay-title="增微信支付账户">
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-md12">
+            <div class="layui-card">
+                <div class="layui-card-header">填写微信支付账户资料</div>
+                <div class="layui-card-body">
+                    <form class="layui-form" action="" lay-filter="component-form-element">
+                        <input type="hidden" value="" id="id" name="id">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">公众号名称</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="name" id="name" placeholder="公众号名称" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">AppId：</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="appid" id="appid" placeholder="微信公众号AppId" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">Secret</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="secret" id="secret" placeholder="微信公众号Secret" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">商户号ID</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="mchid" id="mchid" placeholder="商户号ID" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">支付KEY</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="key" id="key" placeholder="商户支付key" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">备注信息</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="remark" id="remark" placeholder="备注信息" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">排序</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="sort"  id="sort" placeholder="排序值越小越靠前 " autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+
+                        <div class="layui-form-item">
+                            <input type="hidden" name="api_client_cert" id="api_client_cert" >
+                            <label class="layui-form-label">证书cert</label>
+                            <div class="layui-input-block">
+                                <button type="button" class="layui-btn" id="upload_cert"><i class="layui-icon"></i>点击上传</button>
+                                <p id="cert_pem"></p>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <input type="hidden" name="api_client_key" id="api_client_key">
+                            <label class="layui-form-label">证书key</label>
+                            <div class="layui-input-block">
+                                <button type="button" class="layui-btn" id="upload_key"><i class="layui-icon"></i>点击上传</button>
+                                <p id="key_pem"></p>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-input-block">
+                                <button class="layui-btn" lay-submit lay-filter="component-form-element">立即提交</button>
+                                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    layui.use(['admin', 'form', 'jquery','xmSelect','upload'], function (admin, table, form) {
+        var $ = layui.jquery;
+        var form =layui.form;
+        var upload =layui.upload;
+        var view = $('#wechat-edit');
+        var token = admin.loginToken;
+        var popup_data = POPUP_DATA.data
+        $('#id').val(popup_data['id']);
+        $('#name').val(popup_data['name']);
+        $('#appid').val(popup_data['appid']);
+        $('#secret').val(popup_data['secret']);
+        $('#mchid').val(popup_data['mchid']);
+        $('#key').val(popup_data['key']);
+        $('#sort').val(popup_data['sort']);
+        $('#remark').val(popup_data['remark']);
+        $('#api_client_cert').val(popup_data['api_client_cert']);
+        $('#cert_pem').text(popup_data['api_client_cert']);
+        $('#api_client_key').val(popup_data['api_client_key']);
+        $('#key_pem').text(popup_data['api_client_key']);
+            console.log(popup_data)
+        upload.render({ //允许上传的文件后缀
+            elem: '#upload_cert'
+            ,headers: {token: token}
+            ,url: '/admin/wechat/upload' //改成您自己的上传接口
+            ,accept: 'file' //普通文件
+            ,exts: 'pem' //只允许上传压缩文件
+            ,done: function(res){
+                if(res.code==200){
+                    $('#cert_pem').html(res.result.path)
+                    $('#api_client_cert').val(res.result.path)
+                }
+                layer.msg(res.msg);
+            }
+        });
+        upload.render({ //允许上传的文件后缀
+            elem: '#upload_key'
+            ,headers: {token: token}
+            ,url: '/admin/wechat/upload' //改成您自己的上传接口
+            ,accept: 'file' //普通文件
+            ,exts: 'pem' //只允许上传压缩文件
+            ,done: function(res){
+                if(res.code==200){
+                    $('#key_pem').html(res.result.path)
+                    $('#api_client_key').val(res.result.path)
+                }
+                layer.msg(res.msg);
+            }
+        });
+
+
+        var index = parent.layer.index
+        form.on('submit(component-form-element)', function (data) {
+            console.log(data.field)
+            admin.post({
+                api: 'editWechat',
+                async: false,
+                data:data.field,
+                success:function (res) {
+                    if(res.result.status==1){
+                        admin.modal.success(res.msg,{end:function () { parent.layer.close(index)}})
+                    }else{
+                        admin.modal.warn(res.msg)
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>

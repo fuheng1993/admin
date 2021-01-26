@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>{$order.remark}-支付</title>
+	<script src="/public/js/new_file.js"></script>
+	<style>
+		*{
+			padding: 0;
+			margin: 0;
+			box-sizing: border-box;
+		}
+		.container{
+			padding: 0.3rem;
+		}
+		.title{
+			font-size: 0.16rem;
+			font-weight: bold;
+		}
+		.common_box{
+			width: 3.15rem;
+			height: 1.95rem;
+			background:rgba(200,204,201,1);
+			border-radius: 0.2rem;
+			margin: 0.3rem 0;
+			text-align: center;
+		}
+		img{
+			width: 0.6rem;
+			height: 0.6rem;
+		}
+		.name{
+			font-size: 0.15rem;
+			color: #FFFFFF;
+			margin-top: -0.1rem;
+		}
+		.pay_btn{
+			width: 3.15rem;
+			height: 0.45rem;
+			text-align: center;
+			line-height: 0.45rem;
+			color: #FFFFFF;
+			background:rgba(200,204,201,1);
+			border-radius:0.3rem;
+			font-size: 0.15rem;
+		}
+		.blue{
+			background:rgba(80,129,242,1);
+		}
+		.green{
+			background:rgba(39,182,122,1);
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+	<div class="title" style="text-align: center">{$order.remark}-订单支付</div>
+	<div class="weixin common_box green">
+		<img src="/public/images/weixin.png"/>
+		<div class="name">微信支付</div>
+	</div>
+	<a href="{$url}" style="display: block;text-decoration:none;" class="pay_btn green">支付￥{$order['price']}</a>
+	<div  class="pay_btn finish" style="margin-top: 10px;">已完成支付</div>
+
+<!--	<a href="{$order.cancel_url}" class="pay_btn green" style="display: block;text-decoration:none;margin-top: 0.15rem;background: #DEF4EB;color: #27B67A">暂不支付</a>-->
+
+
+<!--	<div href="" class="pay_btn green">支付￥{$order['amount']}</div>-->
+</div>
+</body>
+<script>
+	var html = document.querySelector('html');
+	var rem = html.offsetWidth / 3.75;
+	html.style.fontSize = rem + "px";
+	var type=1;
+	var is_pay = "{$order.is_pay??0}"
+	$(function(){
+		if(is_pay==1){
+			window.location.href="/pictures?transaction_id={$order['transaction_id']}&order_no={$order['order_no']}";
+		}
+		var num=0;
+		var query_order = window.setInterval(function (){
+			$.post("/checkOrderIsPay",{order_id:'{$order.id}'},function(result){
+				if(result.status==1){
+					console.log('订单已支付')
+					window.location.href="/pictures?transaction_id={$order['transaction_id']}&order_no={$order['order_no']}";
+					window.clearTimeout(query_order);
+
+				}else{
+					console.log('订单未支付')
+				}
+			});
+			num++;
+			if(num>=60){ //两分钟不支付自动跳转
+				window.history.go(-1);
+				window.clearTimeout(query_order);
+			}
+		},3000);
+
+		//window.location.href = '{$url}'
+		$('.finish').click(function () {
+			$.post("/api/pay/checkOrderIsPay",{order_id:'{$order.id}'},function(result){
+				if(result.status==1){
+					console.log('订单已支付')
+					window.location.href="/pictures?transaction_id={$order['transaction_id']}&order_no={$order['order_no']}";
+				}else{
+					alert('订单未支付，如已支付，可以尝试刷新当前页面！')
+
+				}
+			});
+		})
+	})
+
+</script>
+</html>

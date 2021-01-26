@@ -1,0 +1,295 @@
+<link rel="stylesheet" href="./nepadmin/css/formSelects.css" media="all">
+<style>
+    .xm-select-dl{
+        top:unset !important;
+    }
+    .layui-table-cell {  padding: 0 5px;  }
+</style>
+<div class="layui-fluid" id="VIEW-wechat-list-table" lay-title="微信支付账户列表">
+    <div class="layui-row layui-col-space10">
+        <div class="layui-col-md10">
+            <div class="layui-card">
+
+                <div class="layui-card-body nepadmin-pad-l10 nepadmin-pad-r10">
+                    <div class="layui-btn-container">
+                        <div class="layui-btn layui-btn-sm layui-btn-danger table-action" data-type="del">批量删除</div>
+                        <div class="layui-btn layui-btn-sm table-action" data-type='add' >添加微信支付账户</div>
+                        <div class="layui-btn layui-btn-sm layui-btn-primary table-action" data-type="refresh">刷新页面</div>
+                    </div>
+                    <table id="wechat-list-table" lay-filter="wechat-list-table"></table>
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-md2">
+            <div class="layui-card">
+                <div class="layui-card-header">筛选数据</div>
+                <div class="layui-card-body">
+                    <form class="layui-row layui-col-space10 layui-form" id="search_wechat">
+                        <div class="layui-col-md12 layui-col-xs4">
+                            <input type="text" class="layui-input" name="name" placeholder="请输入主体名称" >
+                        </div>
+                        <div class="layui-col-md12 layui-col-xs12">
+                            <div class="layui-row layui-col-space10">
+                                <div class="layui-col-xs6">
+                                    <div class="layui-btn layui-btn-sm layui-btn-fluid" lay-submit lay-filter="search-wechat">筛选</div>
+                                </div>
+                                <div class="layui-col-xs6">
+                                    <button type="reset" class="layui-btn layui-btn-sm layui-btn-fluid layui-btn-primary">重置</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="layui-card nepadmin-font-12">
+                <div class="layui-card-header">
+                    <i class="layui-icon">&#xe78c;</i> 帮助中心 </div>
+                <div class="layui-card-body">
+                    <p>微信支付资料如何获取？</p>
+                    <p class="nepadmin-c-gray">1.AppId和Secret在公众号后台获取</p>
+                    <p class="nepadmin-c-gray">2.MchId和key在商户号后台获取</p>
+                    <p class="nepadmin-c-gray">3.支付cert证书在商户后台获取</p>
+<!--                    <hr/>-->
+<!--                    <p><a>如何新建／编辑？</a></p>-->
+<!--                    <p><a>删除时注意事项？</a></p>-->
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- 用户列表bar tool -->
+<script type="text/html" id="wechat_bar">
+    <div class="layui-btn-group">
+        <a class="layui-btn layui-btn-sm" lay-event="edit">编辑</a>
+        <a class="layui-btn layui-btn-sm" lay-event="pay">测试支付</a>
+        <a class="layui-btn layui-btn-danger layui-btn-sm" lay-event="del">删除</a>
+
+    </div>
+</script>
+<script type="text/html" id="wechatStatusTpl">
+    <input type="checkbox" name="status" value="{{d.id}}" lay-skin="switch" lay-text="正常|禁用" lay-filter="status" {{ d.status == 1 ? 'checked' : '' }}>
+</script>
+
+<script>
+    layui.use(['admin', 'table', 'form', 'dropdown', 'jquery'], function (admin, table, form, dropdown, $) {
+        var view = $('#VIEW-wechat-list-table');
+        var tableFilter = 'wechat-list-table';
+        form.render();
+        admin.renderTable({
+            elem: '[lay-filter="' + tableFilter + '"]',
+            id: tableFilter,
+            api: 'getWechatList',
+            page: true,
+
+            cols: [[
+                { title: '', type: 'checkbox', fixed: true, width: 60 },
+                { title: 'ID', field: 'id', fixed: true,width: 60},
+                { title: '主体名称', field: 'name'},
+                { title: 'AppId', field: 'appid',width: 180},
+                { title: '商户号ID', field: 'mchid',width: 100},
+                { title: '累计收款', field: 'pay_money',width: 100},
+                { title: '累计退款', field: 'refund_money',width: 100},
+                { title: '备注', field: 'remark'},
+                { title: '创建时间', field: 'create_time',width: 160},
+                { title: '状态', field: 'status',templet:'#wechatStatusTpl',width: 80},
+                {title: '操作', fixed: 'right', toolbar:'#wechat_bar',width: 170},
+            ]]
+        });
+        view.find('.table-action').click(function () {
+            var type = $(this).attr('data-type')
+            var checkStatus = table.checkStatus('wechat-list-table')
+                ,data = checkStatus.data;
+            console.log(data);
+            var ids = [];
+            $.each(data,function(i){ ids[i] = data[i]['id']; });
+            var checkedCount = table.checkStatus(tableFilter).data.length;
+            switch (type) {
+                case 'add':
+                    admin.popup({
+                        //网页地址或本地目录
+                        title:'添加微信支付账户',
+                        url:'/wechat/add',
+                        area: ['60%', '90%'],
+                        //传递参数，弹出的页面可以使用 POPUP_DATA.username 获取值
+                        data:{},
+                        end:function () {
+                            table.reload( 'wechat-list-table');
+                        }
+                    })
+                    break;
+                case   'refresh':
+                    layui.view.tab.refresh();
+                    break;
+                case   'del':
+                        if (checkedCount == 0) {
+                            layer.msg('请先选择要删除的账户');
+                        } else {
+                            layer.open({
+                                title: '温馨提示'
+                                ,content: '确定删除选中账户？删除后数据将不可恢复！'
+                                ,btn: ['确认','取消']
+                                ,yes:function () {
+                                    admin.post({
+                                        api: 'delWechat',
+                                        async: false,
+                                        data:{ids:ids},
+                                        success:function (res) {
+                                            if(res.result.status==1){
+                                                admin.modal.success(res.msg,{end:function () {
+                                                    table.reload( 'wechat-list-table');
+                                                }})
+                                            }else{
+                                                admin.modal.warn(res.msg)
+                                            }
+
+                                        }
+                                    });
+                                }
+                                ,success: function(layero, index){
+                                    this.enterEsc = function(event){
+                                        if(event.keyCode === 13){
+                                            admin.post({
+                                                api: 'delWechat',
+                                                async: false,
+                                                data:{ids:ids},
+                                                success:function (res) {
+                                                    if(res.result.status==1){
+                                                        admin.modal.success(res.msg,{end:function () {
+                                                            table.reload( 'wechat-list-table');
+                                                        }})
+                                                    }else{
+                                                        admin.modal.warn(res.msg)
+                                                    }
+
+                                                }
+                                            });
+                                            return false; //阻止系统默认回车事件
+                                        }
+                                    };
+                                    $(document).on('keydown', this.enterEsc);	//监听键盘事件，关闭层
+                                }
+                                ,end: function(){
+                                    $(document).off('keydown', this.enterEsc);	//解除键盘关闭事件
+                                }
+                            });
+
+                        }
+                    break;
+            }
+        })
+
+        //监听上架操作
+        form.on('switch(status)', function(obj){
+            var value = obj.elem.checked==true?1:0;
+            admin.post({
+                api: 'doWechatStatus',
+                async: false,
+                data:{value:value,id:this.value},
+                success:function (res) {
+                    admin.modal.success(res.msg,{area:['400px']});
+                    if(res.result.status==0){table.reload( 'wechat-list-table');}
+                }
+            });
+        });
+        // 监听筛选用户
+        form.on('submit(search-wechat)', function (data) {
+            table.reload( 'wechat-list-table', {
+                where: {
+                    name:data.field.name
+                }
+                ,page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+            });
+            return false;
+        });
+
+        //监听工具条
+        table.on('tool(wechat-list-table)', function(obj){
+            let data = obj.data;
+            let layEvent = obj.event;
+            let tr = obj.tr;
+            //console.log(data)
+            if(layEvent === 'del'){
+                layer.open({
+                    title: '温馨提示'
+                    ,content: '确定删除选中账户？删除后数据将不可恢复！'
+                    ,btn: ['确认','取消']
+                    ,yes:function () {
+                        admin.post({
+                            api: 'delWechat',
+                            async: false,
+                            data:{ids:[data.id]},
+                            success:function (res) {
+                                if(res.result.status==1){
+                                    admin.modal.success(res.msg,{end:function () {
+                                        table.reload( 'wechat-list-table');
+                                    }})
+                                }else{
+                                    admin.modal.warn(res.msg)
+                                }
+
+                            }
+                        });
+                    }
+                    ,success: function(layero, index){
+                        this.enterEsc = function(event){
+                            if(event.keyCode === 13){
+                                admin.post({
+                                    api: 'delWechat',
+                                    async: false,
+                                    data:{ids:[data.id]},
+                                    success:function (res) {
+                                        if(res.result.status==1){
+                                            admin.modal.success(res.msg,{end:function () {
+                                                table.reload( 'wechat-list-table');
+                                            }})
+                                        }else{
+                                            admin.modal.warn(res.msg)
+                                        }
+
+                                    }
+                                });
+                                return false; //阻止系统默认回车事件
+                            }
+                        };
+                        $(document).on('keydown', this.enterEsc);	//监听键盘事件，关闭层
+                    }
+                    ,end: function(){
+                        $(document).off('keydown', this.enterEsc);	//解除键盘关闭事件
+                    }
+                });
+            }
+            if(layEvent === 'edit'){
+                admin.popup({
+                    title:'编辑'+data.name,
+                    url:'/wechat/edit',
+                    area: ['60%', '90%'],
+                    //传递参数，弹出的页面可以使用 POPUP_DATA.username 获取值
+                    data:{data:data},
+                    end:function () {
+                        table.reload( 'wechat-list-table');
+                    }
+                })
+            }
+            if(layEvent === 'pay'){
+                admin.popup({
+                    //网页地址或本地目录
+                    title:"微信支付账户支付测试",
+                    url:'/wechat/pay',
+                    area: ['400px', '500px'],
+                    //传递参数，弹出的页面可以使用 POPUP_DATA.username 获取值
+                    data:{wechat_id:data.id},
+                    end:function () {
+                        table.reload( 'wechat-list-table');
+                    }
+                })
+            }
+        });
+
+
+    })
+</script>

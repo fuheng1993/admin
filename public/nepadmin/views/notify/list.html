@@ -1,0 +1,176 @@
+<link rel="stylesheet" href="./nepadmin/css/formSelects.css" media="all">
+<style>
+    .layui-table-cell {  padding: 0 5px;  }
+    .xm-select-dl{
+        top:unset !important;
+    }
+</style>
+<div class="layui-fluid" id="VIEW-notify-list-table" lay-title="订单异步通知列表">
+    <div class="layui-row layui-col-space10">
+        <div class="layui-col-md12">
+            <div class="layui-card">
+                <div class="layui-card-header">筛选数据</div>
+                <div class="layui-card-body">
+                    <form class="layui-row layui-col-space10 layui-form" id="search_user">
+                        <div class="layui-input-inline">
+                            <input type="text" class="layui-input" name="user_order_no" placeholder="用户自定义单号" >
+                        </div>
+                        <div class="layui-input-inline">
+                            <input type="text" class="layui-input" name="order_no" placeholder="商户订单号" >
+                        </div>
+                        <div class="layui-input-inline">
+                            <input type="text" class="layui-input" name="transaction_id" placeholder="流水订单号" >
+                        </div>
+                        <div class="layui-input-inline">
+                            <div class="layui-btn layui-btn " lay-submit lay-filter="search-notify">立即搜索</div>
+                            <button type="reset" class="layui-btn   layui-btn-primary">重置</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-md12">
+            <div class="layui-card">
+
+                <div class="layui-card-body nepadmin-pad-l10 nepadmin-pad-r10">
+                    <table id="notify-list-table" lay-filter="notify-list-table"></table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- 用户列表bar tool -->
+<script type="text/html" id="notify_bar">
+    <div class="layui-btn-group">
+        <a class="layui-btn layui-btn-sm" lay-event="send">重发</a>
+    </div>
+    <!--<a class="layui-btn layui-btn-danger layui-btn-sm" lay-event="del">删除</a>-->
+</script>
+<script type="text/html" id="successTpl">
+    {{d.is_success==1?'<span class="layui-badge layui-bg-green">成功</span>':'<span class="layui-badge">失败</span>'}}
+</script>
+
+
+<script>
+    layui.use(['admin', 'table', 'form', 'dropdown','xmSelect', 'jquery'], function (admin, table, form, dropdown, $) {
+        var $ = layui.jquery;
+        var xmSelect = layui.xmSelect;
+        var view = $('#VIEW-notify-list-table');
+        var tableFilter = 'notify-list-table';
+        form.render();
+        admin.renderTable({
+            elem: '[lay-filter="' + tableFilter + '"]',
+            id: tableFilter,
+            api: 'getNotify',
+            page: true,
+            cols: [[
+                { title: '回调地址', field: 'notify_url',width: 240},
+                { title: '商户订单号', field: 'order_no',width: 180},
+                { title: '用户订单号', field: 'user_order_no',width: 180},
+                { title: '请求内容', field: 'contents'},
+                { title: '响应结果', field: 'result',width: 80},
+                { title: '推送次数', field: 'send_num',width: 80},
+                { title: '最后推送时间', field: 'update_time',width: 150},
+                { title: '推送状态', field: 'is_success',width: 80,templet:'#successTpl'},
+                {width:100, title: '操作', fixed: 'right', toolbar:'#notify_bar'},
+            ]]
+        });
+        view.find('.table-action').click(function () {
+            var type = $(this).attr('data-type')
+            var checkStatus = table.checkStatus('notify-list-table')
+                ,data = checkStatus.data;
+            console.log(data);
+            var ids = [];
+            $.each(data,function(i){ ids[i] = data[i]['id']; });
+            var checkedCount = table.checkStatus(tableFilter).data.length;
+            switch (type) {
+                case   'refresh':
+                    layui.view.tab.refresh();
+                    break;
+                case 'add':
+                    admin.popup({
+                        //网页地址或本地目录
+                        title:'添加账户',
+                        url:'/user/add',
+                        area: ['60%', '90%'],
+                        //传递参数，弹出的页面可以使用 POPUP_DATA.username 获取值
+                        data:{},
+                        end:function () {
+                            table.reload( 'notify-list-table');
+                        }
+                    })
+                    break;
+            }
+        })
+
+        // 监听筛选用户
+        form.on('submit(search-notify)', function (data) {
+            table.reload( 'notify-list-table', {
+                where: data.field
+                ,page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+            });
+            return false;
+        });
+        //监听工具条
+        table.on('tool(notify-list-table)', function(obj){
+            let data = obj.data;
+            let layEvent = obj.event;
+            let tr = obj.tr;
+            if(layEvent === 'send'){
+                layer.open({
+                    title: '温馨提示'
+                    ,content: '确定重新推送异步通知？'
+                    ,btn: ['确认','取消']
+                    ,yes:function () {
+                        admin.post({
+                            api: 'sendNotify',
+                            async: false,
+                            data:{id:data.id},
+                            success:function (res) {
+                                if(res.status==1){
+                                    admin.modal.success(res.msg,{end:function () {
+                                            table.reload('notify-list-table');
+                                        }})
+                                }else{
+                                    admin.modal.warn(res.msg)
+                                }
+                            }
+                        });
+                    }
+                    ,success: function(layero, index){
+                        this.enterEsc = function(event){
+                            if(event.keyCode === 13){
+                                admin.post({
+                                    api: 'sendNotify',
+                                    async: false,
+                                    data:{id:data.id},
+                                    success:function (res) {
+                                        if(res.status==1){
+                                            admin.modal.success(res.msg,{end:function () {
+                                                    table.reload('notify-list-table');
+                                                }})
+                                        }else{
+                                            admin.modal.warn(res.msg)
+                                        }
+                                    }
+                                });
+                                return false; //阻止系统默认回车事件
+                            }
+                        };
+                        $(document).on('keydown', this.enterEsc);	//监听键盘事件，关闭层
+                    }
+                    ,end: function(){
+                        $(document).off('keydown', this.enterEsc);	//解除键盘关闭事件
+                    }
+                });
+            }
+        });
+
+
+    })
+</script>

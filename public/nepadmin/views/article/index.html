@@ -1,0 +1,280 @@
+<link rel="stylesheet" href="./nepadmin/css/formSelects.css" media="all">
+<style>
+    .xm-select-dl{
+        top:unset !important;
+    }
+    .layui-table-cell {  padding: 0 5px;  }
+</style>
+<div class="layui-fluid" id="VIEW-article-index-table" lay-title="首页文章列表">
+    <div class="layui-row layui-col-space10">
+        <div class="layui-col-md12">
+            <div class="layui-card">
+                <div class="layui-card-header">筛选数据</div>
+                <div class="layui-card-body">
+                    <form class="layui-row layui-col-space10 layui-form" lay-filter="search-article" id="search-article">
+                        <input type="hidden" name="order" id="order" value="id desc">
+                        <div class="layui-input-inline">
+                            <input type="text" class="layui-input" name="title" placeholder="文章标题">
+                        </div>
+                        <div class="layui-input-inline">
+                            <div class="layui-btn layui-btn " lay-submit lay-filter="search-article">立即搜索</div>
+                            <button type="reset" class="layui-btn   layui-btn-primary">重置</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-md12">
+            <div class="layui-card">
+                <div class="layui-card-body nepadmin-pad-l10 nepadmin-pad-r10">
+                    <div class="layui-btn-container">
+                        <div class="layui-btn layui-btn-sm layui-btn-danger table-action" data-type="del">批量删除</div>
+                        <div class="layui-btn layui-btn-sm table-action" data-type='add' >添加文章</div>
+                        <div class="layui-btn layui-btn-sm layui-btn-primary table-action" data-type="refresh">刷新页面</div>
+                    </div>
+                    <table id="article-index-table" lay-filter="article-index-table"></table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- 用户列表bar tool -->
+<script type="text/html" id="article_bar">
+    <div class="layui-btn-group">
+        <a class="layui-btn layui-btn-sm" lay-event="edit">编辑</a>
+        <a class="layui-btn layui-btn-danger layui-btn-sm" lay-event="del">删除</a>
+    </div>
+</script>
+
+
+<script>
+    layui.use(['admin', 'table', 'form', 'dropdown','xmSelect', 'jquery'], function (admin, table, form, dropdown, $) {
+        var $ = layui.jquery;
+        var xmSelect = layui.xmSelect;
+        var view = $('#VIEW-article-index-table');
+        var tableFilter = 'article-index-table';
+        form.render();
+        admin.renderTable({
+            elem: '[lay-filter="' + tableFilter + '"]',
+            id: tableFilter,
+            api: 'getArticleList',
+            where:{type:1},
+            autoSort: false, //禁用前端自动排序。注意：该参数为 layui 2.4.4 新增
+            page: true,
+            cols: [[
+                { title: '', type: 'checkbox', fixed: true, width: 60 },
+                { title: 'ID', field: 'id', fixed: true,width: 60, sort: true},
+                { title: '封面图', field: 'litpic',width: 70,templet: function(d){ var html = '<img src="'+d.litpic+'" width="30px" height="30px"/>';
+                        return html;
+                }},
+                { title: '公众号账号', field: 'wechat_account',width: 120},
+                { title: '公众号名称', field: 'wechat',width: 120},
+                { title: '文章标题', field: 'title'},
+                { title: '文章链接', field: 'url'},
+                // { title: '最后更新时间', field: 'update_time',width: 150},
+                { title: '创建时间', field: 'create_time',width: 150},
+                {width:100, title: '操作', fixed: 'right', toolbar:'#article_bar'},
+            ]]
+        });
+        //监听排序事件
+        table.on('sort(article-index-table)', function(obj){ //注：sort 是工具条事件名，test 是 table 原始容器的属性 lay-filter="对应的值"
+            if(obj.type){
+                $('#order').val(obj.field + ' ' + obj.type);
+            }else{
+                $('#order').val('');
+            }
+
+            var data = form.val("search_user");
+
+            //尽管我们的 table 自带排序功能，但并没有请求服务端。
+            //有些时候，你可能需要根据当前排序的字段，重新向服务端发送请求，从而实现服务端排序，如：
+            table.reload('article-index-table', {
+                initSort: obj //记录初始排序，如果不设的话，将无法标记表头的排序状态。
+                ,where:data
+            });
+
+            //layer.msg('服务端排序。order by '+ obj.field + ' ' + obj.type);
+        });
+       
+
+        view.find('.table-action').click(function () {
+            var type = $(this).attr('data-type')
+            var checkStatus = table.checkStatus('article-index-table')
+                ,data = checkStatus.data;
+            console.log(data);
+            var ids = [];
+            $.each(data,function(i){ ids[i] = data[i]['id']; });
+            var checkedCount = table.checkStatus(tableFilter).data.length;
+            switch (type) {
+                case 'add':
+                    admin.popup({
+                        title:'新增文章',
+                        //网页地址或本地目录
+                        url:'/article/add',
+                        area: ['600px', '98%'],
+                        //传递参数，弹出的页面可以使用 POPUP_DATA.username 获取值
+                        data:{},
+                        end:function () {
+                            table.reload( 'article-index-table');
+                        }
+                    })
+                    break;
+                case   'refresh':
+                    layui.view.tab.refresh();
+                    break;
+                case   'del':
+                        if (checkedCount == 0) {
+                            layer.msg('请先选择要删除的文章');
+                        } else {
+                            layer.open({
+                                title: '温馨提示'
+                                ,content: '确定删除选中文章？删除后数据将不可恢复！'
+                                ,btn: ['确认','取消']
+                                ,yes:function () {
+                                    admin.post({
+                                        api: 'delArticle',
+                                        async: false,
+                                        data:{ids:ids},
+                                        success:function (res) {
+                                            if(res.status==1){
+                                                admin.modal.success(res.msg,{end:function () {
+                                                    table.reload( 'article-index-table');
+                                                }})
+                                            }else{
+                                                admin.modal.warn(res.msg)
+                                            }
+
+                                        }
+                                    });
+                                }
+                                ,success: function(layero, index){
+                                    this.enterEsc = function(event){
+                                        if(event.keyCode === 13){
+                                            admin.post({
+                                                api: 'delArticle',
+                                                async: false,
+                                                data:{ids:ids},
+                                                success:function (res) {
+                                                    if(res.status==1){
+                                                        admin.modal.success(res.msg,{end:function () {
+                                                            table.reload( 'article-index-table');
+                                                        }})
+                                                    }else{
+                                                        admin.modal.warn(res.msg)
+                                                    }
+
+                                                }
+                                            });
+                                            return false; //阻止系统默认回车事件
+                                        }
+                                    };
+                                    $(document).on('keydown', this.enterEsc);	//监听键盘事件，关闭层
+                                }
+                                ,end: function(){
+                                    $(document).off('keydown', this.enterEsc);	//解除键盘关闭事件
+                                }
+                            });
+
+                        }
+                    break;
+            }
+        })
+
+        // 监听筛选用户
+        form.on('submit(search-article)', function (data) {
+            table.reload( 'article-index-table', {
+                where: data.field
+                ,page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+            });
+            return false;
+        });
+
+        //监听工具条
+        table.on('tool(article-index-table)', function(obj){
+            let data = obj.data;
+            let layEvent = obj.event;
+            let tr = obj.tr;
+            if(layEvent === 'detail'){
+                //do somehing
+            } else if(layEvent === 'del'){
+                layer.open({
+                    title: '温馨提示'
+                    ,content: '确定删除此文章？删除后数据将不可恢复！'
+                    ,btn: ['确认','取消']
+                    ,yes:function () {
+                        admin.post({
+                            api: 'delArticle',
+                            async: false,
+                            data:{ids:[data.id]},
+                            success:function (res) {
+                                if(res.status==1){
+                                    admin.modal.success(res.msg,{end:function () {
+                                        table.reload( 'article-index-table');
+                                    }})
+                                }else{
+                                    admin.modal.warn(res.msg)
+                                }
+
+                            }
+                        });
+                    }
+                    ,success: function(layero, index){
+                        this.enterEsc = function(event){
+                            if(event.keyCode === 13){
+                                admin.post({
+                                    api: 'delArticle',
+                                    async: false,
+                                    data:{ids:[data.id]},
+                                    success:function (res) {
+                                        if(res.status==1){
+                                            admin.modal.success(res.msg,{end:function () {
+                                                table.reload( 'article-index-table');
+                                            }})
+                                        }else{
+                                            admin.modal.warn(res.msg)
+                                        }
+
+                                    }
+                                });
+                                return false; //阻止系统默认回车事件
+                            }
+                        };
+                        $(document).on('keydown', this.enterEsc);	//监听键盘事件，关闭层
+                    }
+                    ,end: function(){
+                        $(document).off('keydown', this.enterEsc);	//解除键盘关闭事件
+                    }
+                });
+            } else if(layEvent === 'edit'){
+                admin.popup({
+                    title:'编辑文章',
+                    //网页地址或本地目录
+                    url:'/article/edit',
+                    area: ['600px', '98%'],
+                    //传递参数，弹出的页面可以使用 POPUP_DATA.username 获取值
+                    data:{data:data},
+                    end:function () {
+                        table.reload( 'article-index-table');
+                    }
+                })
+            }else if(layEvent === 'video'){
+                admin.popup({
+                    //网页地址或本地目录
+                    url:'/article/video',
+                    //传递参数，弹出的页面可以使用 POPUP_DATA.username 获取值
+                    data:{data:data},
+                })
+                //admin.navigate('/article/video');return false;
+            }
+        });
+
+
+
+
+    })
+</script>

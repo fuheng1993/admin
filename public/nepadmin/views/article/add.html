@@ -1,0 +1,127 @@
+<div class="layui-fluid"id="article-add" lay-title="小程序">
+    <div class="layui-row layui-col-space15">
+        <form class="layui-form" action="" lay-filter="component-form-element">
+            <div class="layui-col-md12" style="margin-top: 20px;">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">关联的公众号</label>
+                    <div class="layui-input-block">
+                        <div id="wechat_account"  class="xm-select-demo"></div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">文章标题</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="title" placeholder="文章标题" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">文章链接</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="url" placeholder="文章链接" autocomplete="off" class="layui-input">
+                    </div>
+                </div>  
+             
+                <div class="layui-form-item">
+                    <input type="hidden" name="litpic" id="litpic">
+                    <label class="layui-form-label">封面图</label>
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-warm" id="upload-article-litpic">上传封面图</button>
+                        <div class="layui-upload-list">
+                            <img class="layui-upload-img" id="article-litpic" width="200px" height="200px">
+                            <p id="demoText"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button class="layui-btn" lay-submit lay-filter="add-article-sub">立即提交</button>
+                        <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                    </div>
+                </div>
+        </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    layui.use(['admin', 'form', 'jquery','xmSelect','layedit','upload'], function (admin, table, form) {
+        var $ = layui.jquery;
+        var form =layui.form;
+        var view = $('#article-add');
+        var xmSelect = layui.xmSelect;
+        var element = layui.element;
+        var token = admin.loginToken;
+
+        var upload = layui.upload;
+        var wechat_account = xmSelect.render({
+            el: document.querySelector('#wechat_account'),
+            tips: '请选择公众号',
+            radio: true,
+            clickClose: true,
+            autoRow: true,
+            name:'wechat_account',
+            toolbar: {
+                show: true,
+                list: ['ALL', 'REVERSE', 'CLEAR']
+            },
+            filterable: false, //是否开启搜索
+            height: 'auto',
+            data:[]
+        })
+        //远程获取分类
+        admin.post({
+            api: 'getAllApplet',
+            async: false,
+            success:function (res) {wechat_account.update({data:res.result});}
+        });
+        //普通图片上传
+        var uploadInst = upload.render({
+            elem: '#upload-article-litpic'
+            ,headers: {token: token}
+            , url: '/admin/common/upload'
+            , before: function (obj) {
+                //预读本地文件示例，不支持ie8
+                obj.preview(function (index, file, result) {
+                    $('#article-litpic').attr('src', result);
+                });
+            }
+            , done: function (res) {
+                if (res.status==0) {
+                    return layer.msg('上传失败');
+                }else{
+                    layer.msg('上传成功');
+                    $('#litpic').val(res.result.image)
+                }
+            }
+            , error: function () {
+                //演示失败状态，并实现重传
+                var demoText = $('#demoText');
+                demoText.html('<span style="color: #FF5722;">上传失败</span> <a class="layui-btn layui-btn-xs demo-reload">重试</a>');
+                demoText.find('.demo-reload').on('click', function () {
+                    uploadInst.upload();
+                });
+            }
+        })
+        form.render('checkbox');
+        form.render(null, 'component-form-element');
+        form.render(null, 'add-category-element');
+        element.render('breadcrumb', 'breadcrumb');
+        var index = parent.layer.index
+        form.on('submit(add-article-sub)', function (data) {
+            admin.post({
+                api: 'addArticle',
+                async: false,
+                data:data.field,
+                success:function (res) {
+                    if(res.status==1){
+                        admin.modal.success(res.msg,{end:function () { parent.layer.close(index)}})
+                    }else{
+                        admin.modal.warn(res.msg)
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>

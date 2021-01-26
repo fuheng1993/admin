@@ -1,0 +1,148 @@
+<div class="layui-fluid"id="user-edit" lay-title="编辑用户资料">
+    <style>.layui-transfer-active .layui-btn {color: #ff5722;}.layui-transfer-active .layui-btn-disabled {color: #C9C9C9;}</style>
+    <div class="layui-row layui-col-space15" style="margin-top: 20px">
+        <form class="layui-form" action="" lay-filter="user-edit-form">
+        <div class="layui-col-md12">
+
+                    <input type="hidden" name="id" id="id" >
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">账号*</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="username" id="username" lay-verify="required" placeholder="请输入用户账号" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">密码*</label>
+                        <div class="layui-input-block">
+                            <input type="password" name="password"  placeholder="留空默认不修改" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">昵称*</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="nickname" id="nickname" lay-verify="required" placeholder="用户昵称" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">联系电话*</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="tel"  id="tel" lay-verify="required"placeholder="联系人电话" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">测试员</label>
+                        <div class="layui-input-block">
+                            <input type="checkbox" name="is_test" value="1" id="is_test" lay-skin="switch" checked lay-text="是|否">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">账户状态</label>
+                        <div class="layui-input-block">
+                            <input type="checkbox" name="status" id="status" value="1" lay-skin="switch" checked lay-text="开启|关闭">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <input type="hidden" name="avatar" id="avatar">
+                        <label class="layui-form-label">头像：</label>
+                        <div class="layui-input-block">
+                            <button type="button" class="layui-btn layui-btn-warm" id="upload">上传头像</button>
+                            <div class="layui-upload-list">
+                                <img class="layui-upload-img" id="upload-user-image" width="100px" height="100px">
+                                <p id="demoText"></p>
+                            </div>
+                        </div>
+                    </div>
+                        <div class="layui-form-item">
+                            <div class="layui-input-block">
+                                <button class="layui-btn" lay-submit lay-filter="user-edit-sub">保存更新</button>
+                                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                            </div>
+                        </div>
+
+        </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    layui.use(['admin', 'form', 'xmSelect','upload','transfer','util'], function (admin, table, form) {
+        var $ = layui.$
+            ,transfer = layui.transfer
+            ,layer = layui.layer
+            ,util = layui.util
+            ,form =layui.form
+            ,upload =layui.upload;
+
+        var view = $('#wechat-edit');
+        var token = admin.loginToken;
+        var popup_data = POPUP_DATA.data
+        $('#id').val(popup_data['id']);
+        $('#nickname').val(popup_data['nickname']);
+        $('#tel').val(popup_data['tel']);
+        $('#username').val(popup_data['username']);
+        $('#avatar').val(popup_data['avatar']);
+        $('#upload-user-image').attr('src',popup_data['avatar']);
+        if(popup_data['status']==1){
+            $('#status').attr('checked',true)
+        }else{
+            $('#status').attr('checked',false)
+        }
+        if(popup_data['is_test']==1){
+            $('#is_test').attr('checked',true)
+        }else{
+            $('#is_test').attr('checked',false)
+        }
+        form.render('checkbox');
+
+        form.render(null, 'user-edit-form');
+        //普通图片上传
+        var uploadInst = upload.render({
+            elem: '#upload'
+            ,headers: {token: token}
+            , url: '/api/common/uploadImage'
+            , before: function (obj) {
+                //预读本地文件示例，不支持ie8
+                obj.preview(function (index, file, result) {
+                    $('#upload-user-image').attr('src', result);
+                });
+            }
+            , done: function (res) {
+                if (res.code != 200) {
+                    return layer.msg('上传失败');
+                }else{
+                    $('#avatar').val(res.result.image)
+                }
+            }
+            , error: function () {
+                //演示失败状态，并实现重传
+                var demoText = $('#demoText');
+                demoText.html('<span style="color: #FF5722;">上传失败</span> <a class="layui-btn layui-btn-xs demo-reload">重试</a>');
+                demoText.find('.demo-reload').on('click', function () {
+                    uploadInst.upload();
+                });
+            }
+        })
+        var index = parent.layer.index
+        form.on('submit(user-edit-sub)', function (data) {
+            admin.post({
+                api: 'editUser',
+                async: false,
+                data:data.field,
+                success:function (res) {
+                    if(res.status==1){
+                        admin.modal.success(res.msg,{end:function () { parent.layer.close(index)}})
+                    }else{
+                        admin.modal.warn(res.msg)
+                    }
+                }
+            });
+            return false;
+        });
+
+
+
+
+    });
+</script>

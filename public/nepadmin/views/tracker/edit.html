@@ -1,0 +1,189 @@
+<div class="layui-fluid"id="user-edit" lay-title="编辑用户资料">
+    <style>.layui-transfer-active .layui-btn {color: #ff5722;}.layui-transfer-active .layui-btn-disabled {color: #C9C9C9;}</style>
+    <div class="layui-row layui-col-space15">
+        <form class="layui-form" action="" lay-filter="user-edit-form">
+        <div class="layui-col-md6">
+            <div class="layui-card">
+                <div class="layui-card-body">
+                    <fieldset class="layui-elem-field layui-field-title" >
+                        <legend>账户基本信息</legend>
+                    </fieldset>
+                        <input type="hidden" name="id" id="id" >
+                        <input type="hidden" name="wechat_ids" id="wechat_ids">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">账户*</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="username" id="username" lay-verify="required" placeholder="请输入账户" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">密码</label>
+                            <div class="layui-input-block">
+                                <input type="password" name="password"  placeholder="留空默认不更新" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">token*</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="token" id="token" lay-verify="required" placeholder="token" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">联系人*</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="name" id="name" lay-verify="required" placeholder="联系人姓名" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">联系电话*</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="tel" id="tel" lay-verify="required"placeholder="联系人电话" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">异步回调*</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="notify_url" id="notify_url" lay-verify="required" placeholder="请输入默认异步回调地址" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">同步跳转*</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="return_url" id="return_url" lay-verify="required" placeholder="请输入默认同步回调地址" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">备注</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="remark" id="remark" placeholder="请输入备注" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">账户状态</label>
+                            <div class="layui-input-block">
+                                <input type="checkbox" name="status"  id="status" value="1" lay-skin="switch" checked="checked" lay-text="开启|关闭">
+                            </div>
+                        </div>
+
+                        <div class="layui-form-item layui-form-text">
+                            <label class="layui-form-label">通知邮箱*</label>
+                            <div class="layui-input-block">
+                                <textarea name="email" id="email" placeholder="请输入邮箱账号，多个以英文逗号“,”隔开 如：123@qq.com,1234@qq.com" class="layui-textarea"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="layui-form-item">
+                            <div class="layui-input-block">
+                                <button class="layui-btn" lay-submit lay-filter="user-edit-sub">保存更新</button>
+                                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                            </div>
+                        </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-md6">
+            <div class="layui-card">
+                <div class="layui-card-body">
+                    <fieldset class="layui-elem-field layui-field-title" >
+                        <legend>绑定支付账户</legend>
+                    </fieldset>
+                    <div id="bindWechat" class="demo-transfer"></div>
+
+                </div>
+            </div>
+        </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    layui.use(['admin', 'form', 'xmSelect','upload','transfer','util'], function (admin, table, form) {
+        var $ = layui.$
+            ,transfer = layui.transfer
+            ,layer = layui.layer
+            ,util = layui.util
+            ,form =layui.form
+            ,upload =layui.upload;
+
+        var view = $('#wechat-edit');
+        var token = admin.loginToken;
+        var popup_data = POPUP_DATA.data
+        $('#id').val(popup_data['id']);
+        $('#name').val(popup_data['name']);
+        $('#tel').val(popup_data['tel']);
+        $('#notify_url').val(popup_data['notify_url']);
+        $('#return_url').val(popup_data['return_url']);
+        $('#username').val(popup_data['username']);
+        $('#email').val(popup_data['email']);
+        $('#token').val(popup_data['token']);
+        $('#remark').val(popup_data['remark']);
+        if(popup_data['status']==1){
+            $('#status').attr('checked','checked')
+        }else{
+            $('#status').attr('checked','')
+        }
+
+
+        form.render(null, 'user-edit-form');
+        var getData;
+        admin.post({
+            api: 'getMyWechat',
+            data:{user_id:popup_data['id']},
+            async: false,
+            success:function (res) {
+                var data_left = res.result.left_data;
+                var right_data = res.result.right_data;
+                getData = right_data;
+                //初始右侧数据
+                transfer.render({
+                    elem: '#bindWechat'
+                    ,title: ['未绑定支付账户', '已绑定支付账户']  //自定义标题
+                    ,data: data_left
+                    ,value: right_data
+                    ,onchange: function(data, index){
+                        if(index==0&& data !=null){
+                            for (var i=0;i<data.length;i++){
+                                getData.push(data[i].value)
+                            }
+                        }else if(index==1&&data!=null){
+                            for (var i=0;i<getData.length;i++){
+                                var temp = getData[i];
+                                for (var j=0;j<data.length;j++){
+                                    if(temp==data[j].value){
+                                        getData.splice(i,1);
+                                        i--;
+                                    }
+                                }
+                            }
+                        }
+                        $('#wechat_ids').val(getData)
+                        console.log(getData);
+                    }
+                })
+
+            }
+        });
+        var index = parent.layer.index
+        form.on('submit(user-edit-sub)', function (data) {
+            admin.post({
+                api: 'editUser',
+                async: false,
+                data:data.field,
+                success:function (res) {
+                    if(res.status==1){
+                        admin.modal.success(res.msg,{end:function () { parent.layer.close(index)}})
+                    }else{
+                        admin.modal.warn(res.msg)
+                    }
+                }
+            });
+            return false;
+        });
+
+
+
+
+    });
+</script>
